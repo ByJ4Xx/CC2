@@ -126,24 +126,8 @@ class HashStructure:
         if not self._valid_key(value):
             return -1
         h = self._hash(value)
-        # Nuevas estrategias: buckets
-        if self.collision == "anidados":
-            bucket = self.table[h]
-            if not isinstance(bucket, list):
-                bucket = []
-                self.table[h] = bucket
-            first_collision_index = h if len(bucket) > 0 else None
-            bucket.append(value)
-            return h, first_collision_index, 1
-
-        if self.collision == "encadenamiento":
-            head = self.table[h]
-            if isinstance(head, Node):
-                self.table[h] = Node(value, head)
-                return h, h, 1
-            else:
-                self.table[h] = Node(value)
-                return h, None, 1
+        # Nuevas estrategias: solo consulta (no inserta)
+        
         if self.collision == "anidados":
             bucket = self.table[h]
             if isinstance(bucket, list) and value in bucket:
@@ -174,6 +158,29 @@ class HashStructure:
             raise ValueError("La clave ya existe (duplicada)")
 
         h = self._hash(value)
+        # Nuevas estrategias: insertar en bucket
+        if self.collision == "anidados":
+            bucket = self.table[h]
+            if not isinstance(bucket, list):
+                bucket = []
+                self.table[h] = bucket
+            first_collision_index = h if len(bucket) > 0 else None
+            bucket.append(value)
+            return h, first_collision_index, 1
+
+        if self.collision == "encadenamiento":
+            head = self.table[h]
+            if isinstance(head, Node):
+                # Append at tail to preserve insertion order
+                node = head
+                while isinstance(node.next, Node):
+                    node = node.next
+                node.next = Node(value)
+                return h, h, 1
+            else:
+                self.table[h] = Node(value)
+                return h, None, 1
+
         first_collision_index: Optional[int] = None
         for i in range(self.capacity):
             idx = self._index_at(h, value, i)
