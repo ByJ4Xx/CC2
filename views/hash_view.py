@@ -22,6 +22,8 @@ COLLISION_STRATEGIES = [
     ("secuencial", "Secuencial"),
     ("doble", "Doble funcion hash"),
     ("cuadrado", "Cuadrado"),
+    ("anidados", "Arreglos anidados"),
+    ("encadenamiento", "Encadenamiento"),
 ]
 
 
@@ -163,7 +165,19 @@ class HashContent(BaseContent):
         if cap == 0:
             self.viewer.insert("end", "Crea o carga la estructura para visualizar contenido.\n")
         else:
+            mode = self.structure.collision if self.structure else ""
             for i in range(mostrar):
+                if mode in {"anidados", "encadenamiento"}:
+                    try:
+                        items = self.structure.bucket_items(i)  # type: ignore[union-attr]
+                    except Exception:
+                        items = []
+                    if items:
+                        joiner = " -> " if mode == "encadenamiento" else ", "
+                        self.viewer.insert("end", f"[{i:>4}]  {joiner.join(str(x) for x in items)}\n")
+                    else:
+                        self.viewer.insert("end", f"[{i:>4}]  -\n")
+                    continue
                 val = None
                 if i < len(tabla):
                     val = tabla[i]
@@ -376,4 +390,3 @@ class HashContent(BaseContent):
 
     def _set_estado(self, msg: str):
         self.lbl_estado.configure(text=msg)
-
