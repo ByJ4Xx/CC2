@@ -8,12 +8,8 @@ import random
 from typing import Any, Dict, List, Optional
 
 
-def _is_power_of_10(n: int) -> bool:
-    if n <= 0:
-        return False
-    while n % 10 == 0:
-        n //= 10
-    return n == 1
+def _is_multiple_of_10(n: int) -> bool:
+    return n > 0 and n % 10 == 0
 
 
 @dataclass
@@ -38,8 +34,8 @@ class ExternalStructureBase:
     def __post_init__(self):
         if not isinstance(self.capacity, int) or self.capacity <= 0:
             raise ValueError("Capacidad inválida")
-        if self.capacity > 10000 or not _is_power_of_10(self.capacity):
-            raise ValueError("La capacidad debe ser potencia de 10 y ≤ 10000")
+        if self.capacity > 10000 or not _is_multiple_of_10(self.capacity):
+            raise ValueError("La capacidad debe ser múltiplo de 10 y ≤ 10000")
         if not (1 <= int(self.key_length) <= 9):
             raise ValueError("Longitud de clave inválida (1-9)")
         # Normalizar datos iniciales
@@ -61,12 +57,20 @@ class ExternalStructureBase:
     # Propiedades de bloques
     @property
     def block_size(self) -> int:
-        return max(1, math.isqrt(self.capacity))
+        size, _ = self._compute_block_layout()
+        return size
 
     @property
     def block_count(self) -> int:
-        size = self.block_size
-        return (self.capacity + size - 1) // size
+        _, count = self._compute_block_layout()
+        return count
+
+    def _compute_block_layout(self) -> tuple[int, int]:
+        sqrt_size = math.isqrt(self.capacity)
+        if sqrt_size > 0 and self.capacity % sqrt_size == 0:
+            return sqrt_size, self.capacity // sqrt_size
+        block_size = max(1, self.capacity // 10)
+        return block_size, 10
 
     # Utilidades internas
     def _valid_key(self, value: int) -> bool:
@@ -149,8 +153,8 @@ class ExternalStructureBase:
         datos = data.get("datos")
         if not isinstance(capacidad, int) or capacidad <= 0:
             raise ValueError("Capacidad inválida en archivo")
-        if capacidad > 10000 or not _is_power_of_10(capacidad):
-            raise ValueError("Capacidad debe ser potencia de 10 y ≤ 10000")
+        if capacidad > 10000 or not _is_multiple_of_10(capacidad):
+            raise ValueError("Capacidad debe ser múltiplo de 10 y ≤ 10000")
         if not isinstance(klen, int) or not (1 <= klen <= 9):
             raise ValueError("Longitud de clave inválida en archivo")
         if not isinstance(datos, list):

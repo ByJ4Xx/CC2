@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
-import math
+import tkinter as tk
 import tkinter.filedialog as fd
 import tkinter.messagebox as mb
 from typing import Dict, Optional, Tuple, Type, TypeVar
@@ -34,7 +34,7 @@ class ExternalBaseContent(BaseContent):
         super().__init__(master)
 
         self.structure: Optional[StructureT] = None
-        self.var_exp = ctk.StringVar(value="3")
+        self.var_capacity = ctk.StringVar(value="1000")
         self.var_klen = ctk.StringVar(value="4")
         self.var_key = ctk.StringVar()
         self.var_gen_count = ctk.StringVar(value="100")
@@ -52,9 +52,11 @@ class ExternalBaseContent(BaseContent):
         cfg_frame.grid(row=0, column=0, sticky="ew", padx=8, pady=(8, 4))
         cfg_frame.grid_columnconfigure(6, weight=1)
 
-        ctk.CTkLabel(cfg_frame, text="Tamaño (10^n):").grid(row=0, column=0, padx=(8, 6), pady=8, sticky="w")
-        self.exp_menu = ctk.CTkOptionMenu(cfg_frame, values=["1", "2", "3", "4"], variable=self.var_exp)
-        self.exp_menu.grid(row=0, column=1, padx=(0, 8), pady=8)
+        ctk.CTkLabel(cfg_frame, text="Tamaño (múltiplo de 10):").grid(
+            row=0, column=0, padx=(8, 6), pady=8, sticky="w"
+        )
+        self.capacity_entry = ctk.CTkEntry(cfg_frame, textvariable=self.var_capacity, width=120)
+        self.capacity_entry.grid(row=0, column=1, padx=(0, 8), pady=8)
 
         ctk.CTkLabel(cfg_frame, text="Longitud de clave:").grid(row=0, column=2, padx=(8, 6), pady=8, sticky="w")
         self.klen_menu = ctk.CTkOptionMenu(cfg_frame, values=[str(i) for i in range(1, 10)], variable=self.var_klen)
@@ -119,13 +121,35 @@ class ExternalBaseContent(BaseContent):
         viewer_frame.grid(row=6, column=0, sticky="nsew", padx=8, pady=(8, 12))
         viewer_frame.grid_rowconfigure(0, weight=0)
         viewer_frame.grid_rowconfigure(1, weight=1)
+        viewer_frame.grid_rowconfigure(2, weight=0)
         viewer_frame.grid_columnconfigure(0, weight=1)
+        viewer_frame.grid_columnconfigure(1, weight=0)
 
-        ctk.CTkLabel(viewer_frame, text="Bloques (ordenados)").grid(row=0, column=0, sticky="w", padx=8, pady=(8, 0))
-        self.blocks_container = ctk.CTkFrame(viewer_frame)
-        self.blocks_container.grid(row=1, column=0, sticky="nsew", padx=8, pady=8)
+        ctk.CTkLabel(viewer_frame, text="Bloques (ordenados)").grid(
+            row=0, column=0, columnspan=2, sticky="w", padx=8, pady=(8, 0)
+        )
+        self.blocks_canvas = tk.Canvas(viewer_frame, highlightthickness=0, borderwidth=0)
+        self.blocks_canvas.grid(row=1, column=0, sticky="nsew", padx=(8, 0), pady=8)
+        self.scrollbar_y = ctk.CTkScrollbar(
+            viewer_frame, orientation="vertical", command=self.blocks_canvas.yview
+        )
+        self.scrollbar_y.grid(row=1, column=1, sticky="ns", pady=8, padx=(0, 8))
+        self.scrollbar_x = ctk.CTkScrollbar(
+            viewer_frame, orientation="horizontal", command=self.blocks_canvas.xview
+        )
+        self.scrollbar_x.grid(row=2, column=0, columnspan=2, sticky="ew", padx=8, pady=(0, 8))
+        self.blocks_canvas.configure(
+            yscrollcommand=self.scrollbar_y.set, xscrollcommand=self.scrollbar_x.set
+        )
+        self.blocks_container = ctk.CTkFrame(self.blocks_canvas)
+        self.blocks_window = self.blocks_canvas.create_window(
+            (0, 0), window=self.blocks_container, anchor="nw"
+        )
         self.blocks_container.grid_columnconfigure(0, weight=0)
         self.blocks_container.grid_rowconfigure(0, weight=0)
+        self.blocks_container.bind("<Configure>", lambda _: self._update_scroll_region())
+        self.blocks_canvas.bind("<Configure>", self._on_canvas_configure)
+        self._sync_canvas_theme()
 
         self._refresh_view()
 
@@ -140,7 +164,7 @@ class ExternalBaseContent(BaseContent):
 
     def _set_config_enabled(self, enabled: bool):
         state = "normal" if enabled else "disabled"
-        self.exp_menu.configure(state=state)
+        self.capacity_entry.configure(state=state)
         self.klen_menu.configure(state=state)
         self.btn_crear.configure(state=state)
         self.btn_borrar.configure(state="normal" if not enabled else "disabled")
@@ -160,6 +184,7 @@ class ExternalBaseContent(BaseContent):
         for widget in self.blocks_container.winfo_children():
             widget.destroy()
         self.current_highlight = highlight
+        self._sync_canvas_theme()
 
         if not self.structure:
             ctk.CTkLabel(
@@ -168,6 +193,7 @@ class ExternalBaseContent(BaseContent):
                 anchor="w",
                 justify="left",
             ).grid(row=0, column=0, sticky="w", padx=8, pady=8)
+            self._update_scroll_region()
             return
 
         blocks = self.structure.get_blocks(fill=True)
@@ -226,6 +252,23 @@ class ExternalBaseContent(BaseContent):
                     text_color=text_color,
                 )
                 cell.grid(row=r + 2, column=col + 1, padx=2, pady=2, sticky="nsew")
+            self._update_scroll_region()
+
+    def _sync_canvas_theme(self):
+        fg_color = self._apply_appearance_mode(self.blocks_container.cget("fg_color"))
+        self.blocks_canvas.configure(background=fg_color)
+
+    def _update_scroll_region(self):
+        bbox = self.blocks_canvas.bbox("all")
+        if bbox is None:
+            bbox = (0, 0, 0, 0)
+        self.blocks_canvas.configure(scrollregion=bbox)
+
+    def _on_canvas_configure(self, event):
+        req_width = self.blocks_container.winfo_reqwidth()
+        new_width = max(event.width, req_width)
+        self.blocks_canvas.itemconfigure(self.blocks_window, width=new_width)
+        self._update_scroll_region()
 
     def _highlight_color(self, active: bool, highlight: Optional[HighlightState]) -> Optional[str]:
         if not active:
@@ -274,17 +317,18 @@ class ExternalBaseContent(BaseContent):
             if not mb.askyesno("Confirmar", "Esto borrará la estructura actual. ¿Continuar?"):
                 return
         try:
-            exp = int(self.var_exp.get())
+            capacity = int((self.var_capacity.get() or "0").strip())
             klen = int(self.var_klen.get())
         except ValueError:
             self._error("Parámetros inválidos")
             return
         try:
-            self.structure = self.structure_cls(10 ** exp, klen)  # type: ignore[call-arg]
+            self.structure = self.structure_cls(capacity, klen)  # type: ignore[call-arg]
         except Exception as e:
             self._error(str(e))
             return
         self._set_estado("Estructura creada.")
+        self.var_capacity.set(str(self.structure.capacity))
         self._set_config_enabled(False)
         self._set_controls_enabled(True)
         self._update_counters()
@@ -401,8 +445,7 @@ class ExternalBaseContent(BaseContent):
             self._error(f"Error al cargar: {e}")
             return
         self.structure = struct
-        exp = int(round(math.log10(self.structure.capacity)))
-        self.var_exp.set(str(exp))
+        self.var_capacity.set(str(self.structure.capacity))
         self.var_klen.set(str(self.structure.key_length))
         self._set_config_enabled(False)
         self._set_controls_enabled(True)
