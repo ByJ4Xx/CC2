@@ -98,9 +98,30 @@ class CollapsibleSidebar(ctk.CTkFrame):
         self.panel_externas = ctk.CTkFrame(self.sections_container, fg_color="transparent")
         self.panel_externas.grid(row=3, column=0, sticky="ew", padx=8, pady=(0, 8))
         self.panel_externas.columnconfigure(0, weight=1)
-        ctk.CTkLabel(self.panel_externas, text="Próximamente…").grid(
-            row=0, column=0, sticky="ew", padx=8, pady=8
+
+        self.btn_ext_seq = ctk.CTkButton(
+            self.panel_externas,
+            text="Secuencial",
+            height=34,
+            fg_color="transparent",
+            hover_color=("#e5f0ff", "#16324a"),
+            corner_radius=8,
+            anchor="w",
+            command=lambda: self.on_select("externas", "secuencial"),
         )
+        self.btn_ext_seq.grid(row=0, column=0, sticky="ew", padx=8, pady=(8, 4))
+
+        self.btn_ext_bin = ctk.CTkButton(
+            self.panel_externas,
+            text="Binaria",
+            height=34,
+            fg_color="transparent",
+            hover_color=("#e5f0ff", "#16324a"),
+            corner_radius=8,
+            anchor="w",
+            command=lambda: self.on_select("externas", "binaria"),
+        )
+        self.btn_ext_bin.grid(row=1, column=0, sticky="ew", padx=8, pady=(4, 8))
 
         # Grafos
         self.btn_grafos = ctk.CTkButton(
@@ -127,6 +148,8 @@ class CollapsibleSidebar(ctk.CTkFrame):
             "internas:lineal": self.btn_lineal,
             "internas:binaria": self.btn_binaria,
             "internas:hash": self.btn_hash,
+            "externas:secuencial": self.btn_ext_seq,
+            "externas:binaria": self.btn_ext_bin,
         }
 
     def toggle(self):
