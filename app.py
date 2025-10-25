@@ -6,8 +6,10 @@ from views.welcome import WelcomeContent
 from views.lineal import LinealContent
 from views.binaria import BinariaContent
 from views.hash_view import HashContent
+from views.digital import DigitalContent
 from views.external_sequential import ExternalSequentialContent
 from views.external_binary import ExternalBinaryContent
+from views.residue import ResidueContent
 
 
 class App(ctk.CTk):
@@ -52,6 +54,8 @@ class App(ctk.CTk):
             "internas:lineal": LinealContent(self.content_container),
             "internas:binaria": BinariaContent(self.content_container),
             "internas:hash": HashContent(self.content_container),
+            "internas:digital": DigitalContent(self.content_container),
+            "internas:residuo": ResidueContent(self.content_container),
             "externas:secuencial": ExternalSequentialContent(self.content_container),
             "externas:binaria": ExternalBinaryContent(self.content_container),
         }

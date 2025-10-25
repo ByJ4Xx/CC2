@@ -85,6 +85,30 @@ class CollapsibleSidebar(ctk.CTkFrame):
         )
         self.btn_hash.grid(row=2, column=0, sticky="ew", padx=8, pady=(4, 8))
 
+        self.btn_digital = ctk.CTkButton(
+            self.panel_internas,
+            text="Árbol Digital",
+            height=34,
+            fg_color="transparent",
+            hover_color=("#e5f0ff", "#16324a"),
+            corner_radius=8,
+            anchor="w",
+            command=lambda: self.on_select("internas", "digital"),
+        )
+        self.btn_digital.grid(row=3, column=0, sticky="ew", padx=8, pady=(4, 8))
+
+        self.btn_residuo = ctk.CTkButton(
+            self.panel_internas,
+            text="Residuo",
+            height=34,
+            fg_color="transparent",
+            hover_color=("#e5f0ff", "#16324a"),
+            corner_radius=8,
+            anchor="w",
+            command=lambda: self.on_select("internas", "residuo"),
+        )
+        self.btn_residuo.grid(row=4, column=0, sticky="ew", padx=8, pady=(4, 8))
+
         # B. Externas
         self.btn_externas = ctk.CTkButton(
             self.sections_container,
@@ -148,6 +172,8 @@ class CollapsibleSidebar(ctk.CTkFrame):
             "internas:lineal": self.btn_lineal,
             "internas:binaria": self.btn_binaria,
             "internas:hash": self.btn_hash,
+            "internas:digital": self.btn_digital,
+            "internas:residuo": self.btn_residuo,
             "externas:secuencial": self.btn_ext_seq,
             "externas:binaria": self.btn_ext_bin,
         }
