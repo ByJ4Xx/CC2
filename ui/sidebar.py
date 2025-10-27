@@ -109,6 +109,30 @@ class CollapsibleSidebar(ctk.CTkFrame):
         )
         self.btn_residuo.grid(row=4, column=0, sticky="ew", padx=8, pady=(4, 8))
 
+        self.btn_residuo_multi = ctk.CTkButton(
+            self.panel_internas,
+            text="Residuo Multiple",
+            height=34,
+            fg_color="transparent",
+            hover_color=("#e5f0ff", "#16324a"),
+            corner_radius=8,
+            anchor="w",
+            command=lambda: self.on_select("internas", "residuo_multiple"),
+        )
+        self.btn_residuo_multi.grid(row=5, column=0, sticky="ew", padx=8, pady=(4, 8))
+
+        self.btn_huffman = ctk.CTkButton(
+            self.panel_internas,
+            text="Huffman",
+            height=34,
+            fg_color="transparent",
+            hover_color=("#e5f0ff", "#16324a"),
+            corner_radius=8,
+            anchor="w",
+            command=lambda: self.on_select("internas", "huffman"),
+        )
+        self.btn_huffman.grid(row=6, column=0, sticky="ew", padx=8, pady=(4, 8))
+
         # B. Externas
         self.btn_externas = ctk.CTkButton(
             self.sections_container,
@@ -174,6 +198,8 @@ class CollapsibleSidebar(ctk.CTkFrame):
             "internas:hash": self.btn_hash,
             "internas:digital": self.btn_digital,
             "internas:residuo": self.btn_residuo,
+            "internas:residuo_multiple": self.btn_residuo_multi,
+            "internas:huffman": self.btn_huffman,
             "externas:secuencial": self.btn_ext_seq,
             "externas:binaria": self.btn_ext_bin,
         }

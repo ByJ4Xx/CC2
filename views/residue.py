@@ -5,6 +5,8 @@ import networkx as nx
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
+from tkinter import filedialog as fd
+import json
 
 
 class ResidueContent(BaseContent):
@@ -55,6 +57,15 @@ class ResidueContent(BaseContent):
         # Estado / mensajes
         self.status = ctk.CTkLabel(self.side, text="", wraplength=220, anchor='w', justify='left')
         self.status.grid(row=7, column=0, padx=12, pady=(8, 12), sticky='w')
+        # Save / Load / Clear buttons
+        self.save_btn = ctk.CTkButton(self.side, text="Guardar (.json)", command=self.on_save)
+        self.save_btn.grid(row=8, column=0, padx=12, pady=(6, 4), sticky='ew')
+
+        self.load_btn = ctk.CTkButton(self.side, text="Cargar (.json)", command=self.on_load)
+        self.load_btn.grid(row=9, column=0, padx=12, pady=4, sticky='ew')
+
+        self.clear_btn = ctk.CTkButton(self.side, text="Limpiar", fg_color="#b00020", hover_color="#c62828", command=self.on_clear)
+        self.clear_btn.grid(row=10, column=0, padx=12, pady=(12, 6), sticky='ew')
 
         # Inicial draw
         self._init_done = True
@@ -180,3 +191,36 @@ class ResidueContent(BaseContent):
         for k, v in sorted(ResidueTree.CODE_TABLE.items()):
             txt.insert('end', f"{k}\t{v}\n")
         txt.configure(state='disabled')
+
+    def on_save(self):
+        path = fd.asksaveasfilename(defaultextension='.json', filetypes=[('JSON files', '*.json')])
+        if not path:
+            return
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(self.tree.to_dict(), f, ensure_ascii=False, indent=2)
+            self.status.configure(text=f"Guardado en {path}")
+        except Exception as e:
+            self.status.configure(text=f"Error guardando: {e}")
+
+    def on_load(self):
+        path = fd.askopenfilename(filetypes=[('JSON files', '*.json')])
+        if not path:
+            return
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            new_tree = ResidueTree.from_dict(data)
+            self.tree = new_tree
+            self.status.configure(text=f"Cargado desde {path}")
+            self._draw()
+        except Exception as e:
+            self.status.configure(text=f"Error cargando: {e}")
+
+    def on_clear(self):
+        try:
+            self.tree.clear()
+            self.status.configure(text="Árbol limpiado")
+            self._draw()
+        except Exception as e:
+            self.status.configure(text=str(e))

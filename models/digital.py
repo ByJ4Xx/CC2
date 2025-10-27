@@ -133,6 +133,28 @@ class DigitalTree:
         for letter in order:
             self.insert(letter)
 
+    def clear(self):
+        """Clear the tree to an empty state."""
+        self.root = None
+        self._next_id = 1
+        self._insertion_order = []
+
+    def to_dict(self) -> dict:
+        """Serialize the tree as a dict. We store insertion order so it can be rebuilt."""
+        return {"tipo": "digital", "insertion_order": list(self._insertion_order)}
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "DigitalTree":
+        if not isinstance(data, dict) or data.get("tipo") != "digital":
+            raise ValueError("Archivo incompatible: 'tipo' debe ser 'digital'")
+        order = data.get("insertion_order")
+        if not isinstance(order, list):
+            raise ValueError("insertion_order inválido en archivo")
+        t = cls()
+        for letter in order:
+            t.insert(letter)
+        return t
+
     def to_list(self) -> List[Tuple[int, Optional[str], Optional[int], Optional[int]]]:
         """Devuelve lista de nodos: (id, value, left_id, right_id) para visualización."""
         res: List[Tuple[int, Optional[str], Optional[int], Optional[int]]] = []

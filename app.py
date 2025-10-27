@@ -10,6 +10,8 @@ from views.digital import DigitalContent
 from views.external_sequential import ExternalSequentialContent
 from views.external_binary import ExternalBinaryContent
 from views.residue import ResidueContent
+from views.huffman import HuffmanContent
+from views.residue_multiple import ResidueMultipleContent
 
 
 class App(ctk.CTk):
@@ -56,6 +58,8 @@ class App(ctk.CTk):
             "internas:hash": HashContent(self.content_container),
             "internas:digital": DigitalContent(self.content_container),
             "internas:residuo": ResidueContent(self.content_container),
+            "internas:residuo_multiple": ResidueMultipleContent(self.content_container),
+            "internas:huffman": HuffmanContent(self.content_container),
             "externas:secuencial": ExternalSequentialContent(self.content_container),
             "externas:binaria": ExternalBinaryContent(self.content_container),
         }

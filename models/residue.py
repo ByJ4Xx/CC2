@@ -217,6 +217,27 @@ class ResidueTree:
         for letter in order:
             self.insert(letter)
 
+    def clear(self):
+        """Clear the residue tree to an empty aux-root state."""
+        self._next_id = 1
+        self.root = self._new_node(None)
+        self._insertion_order = []
+
+    def to_dict(self) -> dict:
+        return {"tipo": "residuo", "insertion_order": list(self._insertion_order)}
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "ResidueTree":
+        if not isinstance(data, dict) or data.get("tipo") != "residuo":
+            raise ValueError("Archivo incompatible: 'tipo' debe ser 'residuo'")
+        order = data.get("insertion_order")
+        if not isinstance(order, list):
+            raise ValueError("insertion_order inválido en archivo")
+        t = cls()
+        for letter in order:
+            t.insert(letter)
+        return t
+
     def to_list(self) -> List[Tuple[int, Optional[str], Optional[int], Optional[int]]]:
         res: List[Tuple[int, Optional[str], Optional[int], Optional[int]]] = []
 
