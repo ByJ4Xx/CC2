@@ -171,6 +171,18 @@ class CollapsibleSidebar(ctk.CTkFrame):
         )
         self.btn_ext_bin.grid(row=1, column=0, sticky="ew", padx=8, pady=(4, 8))
 
+        self.btn_ext_dynamic = ctk.CTkButton(
+            self.panel_externas,
+            text="Estructuras Dinámicas",
+            height=34,
+            fg_color="transparent",
+            hover_color=("#e5f0ff", "#16324a"),
+            corner_radius=8,
+            anchor="w",
+            command=lambda: self.on_select("externas", "dinamicas"),
+        )
+        self.btn_ext_dynamic.grid(row=2, column=0, sticky="ew", padx=8, pady=(4, 8))
+
         # Grafos
         self.btn_grafos = ctk.CTkButton(
             self.sections_container,
@@ -202,6 +214,7 @@ class CollapsibleSidebar(ctk.CTkFrame):
             "internas:huffman": self.btn_huffman,
             "externas:secuencial": self.btn_ext_seq,
             "externas:binaria": self.btn_ext_bin,
+            "externas:dinamicas": self.btn_ext_dynamic,
         }
 
     def toggle(self):

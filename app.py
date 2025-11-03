@@ -12,6 +12,7 @@ from views.external_binary import ExternalBinaryContent
 from views.residue import ResidueContent
 from views.huffman import HuffmanContent
 from views.residue_multiple import ResidueMultipleContent
+from views.external_dynamic import ExternalDynamicContent
 
 
 class App(ctk.CTk):
@@ -62,6 +63,7 @@ class App(ctk.CTk):
             "internas:huffman": HuffmanContent(self.content_container),
             "externas:secuencial": ExternalSequentialContent(self.content_container),
             "externas:binaria": ExternalBinaryContent(self.content_container),
+            "externas:dinamicas": ExternalDynamicContent(self.content_container),
         }
 
         self.show_content("welcome")
