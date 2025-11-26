@@ -2,6 +2,7 @@ import customtkinter as ctk
 
 from ui.sidebar import CollapsibleSidebar
 from ui.header import HeaderBar
+from views.graph_operations_view import GraphOperationsContent
 from views.welcome import WelcomeContent
 from views.lineal import LinealContent
 from views.binaria import BinariaContent
@@ -66,6 +67,7 @@ class App(ctk.CTk):
             "externas:binaria": ExternalBinaryContent(self.content_container),
             "externas:dinamicas": ExternalDynamicContent(self.content_container),
             "externas:indices": ExternalIndexView(self.content_container),
+            "grafos:operaciones": GraphOperationsContent(self.content_container)
         }
 
         self.show_content("welcome")

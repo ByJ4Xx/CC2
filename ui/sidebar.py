@@ -1,6 +1,5 @@
 import customtkinter as ctk
 
-
 class CollapsibleSidebar(ctk.CTkFrame):
     def __init__(self, master, on_select):
         super().__init__(master)
@@ -196,9 +195,18 @@ class CollapsibleSidebar(ctk.CTkFrame):
         self.panel_grafos = ctk.CTkFrame(self.sections_container, fg_color="transparent")
         self.panel_grafos.grid(row=5, column=0, sticky="ew", padx=8, pady=(0, 8))
         self.panel_grafos.columnconfigure(0, weight=1)
-        ctk.CTkLabel(self.panel_grafos, text="Próximamente…").grid(
-            row=0, column=0, sticky="ew", padx=8, pady=8
+        # Botón para acceder a las Operaciones de Grafos
+        self.btn_grafos_operaciones = ctk.CTkButton(
+            self.panel_grafos,
+            text="Operaciones",
+            height=34,
+            fg_color="transparent",
+            hover_color=("#e5f0ff", "#16324a"),
+            corner_radius=8,
+            anchor="w",
+            command=lambda: self.on_select("grafos", "operaciones"),
         )
+        self.btn_grafos_operaciones.grid(row=0, column=0, sticky="ew", padx=8, pady=(8, 8))
 
         self._collapse_panel(self.panel_externas)
         self._collapse_panel(self.panel_grafos)
@@ -215,6 +223,7 @@ class CollapsibleSidebar(ctk.CTkFrame):
             "externas:secuencial": self.btn_ext_seq,
             "externas:binaria": self.btn_ext_bin,
             "externas:dinamicas": self.btn_ext_dynamic,
+            "grafos:operaciones": self.btn_grafos_operaciones,
         }
 
     def toggle(self):
@@ -266,4 +275,3 @@ class CollapsibleSidebar(ctk.CTkFrame):
         btn = self.sub_buttons.get(key)
         if btn is not None:
             btn.configure(fg_color=("#cfe6ff", "#133b5c"), text_color=("#0a0a0a", "white"))
-
