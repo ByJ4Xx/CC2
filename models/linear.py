@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 import json
 import math
 import random
+import bisect  # ← NUEVA IMPORTACIÓN
 from typing import List, Dict, Any
 
 
@@ -28,6 +29,9 @@ class LinearStructure:
             raise ValueError("La capacidad debe ser potencia de 10 y ≤ 10000")
         if not (1 <= int(self.key_length) <= 9):
             raise ValueError("Longitud de clave inválida (1-9)")
+        # Ordena los items si existen
+        if self.items:
+            self.items.sort()
 
     # Operaciones básicas
     @property
@@ -42,10 +46,17 @@ class LinearStructure:
             raise ValueError("La estructura está llena")
         if not self._valid_key(value):
             raise ValueError("La clave no cumple la longitud configurada")
-        if value in self.items:
+        
+        # Encuentra la posición donde insertar para mantener el orden
+        i = bisect.bisect_left(self.items, value)
+        
+        # Verifica si ya existe
+        if i < len(self.items) and self.items[i] == value:
             raise ValueError("La clave ya existe (duplicada)")
-        self.items.append(value)
-        return len(self.items) - 1
+        
+        # Inserta en la posición correcta
+        self.items.insert(i, value)
+        return i
 
     def find(self, value: int) -> int:
         for i, v in enumerate(self.items):
@@ -114,14 +125,19 @@ class LinearStructure:
         max_val = 10 ** k - 1
 
         existing = set(self.items)
-        added = 0
-        # Use random sampling with rejection to avoid duplicates
-        while added < to_add:
+        added_vals = []
+        while len(added_vals) < to_add:
             val = random.randint(min_val, max_val)
             if val in existing:
                 continue
-            self.items.append(val)
             existing.add(val)
-            added += 1
-        return added
+            added_vals.append(val)
+        
+        # Ordena los nuevos valores y los fusiona con la lista existente
+        added_vals.sort()
+        # Fusiona las dos listas ordenadas
+        self.items.extend(added_vals)
+        self.items.sort()  # Ordena la lista completa
+        
+        return len(added_vals)
 

@@ -31,15 +31,30 @@ class LinealContent(BaseContent):
         self.after_id: Optional[str] = None
         self.step_delay_ms = 250
 
-        # Layout del body
-        self.body.grid_columnconfigure(0, weight=1)
-        for r in range(8):
-            self.body.grid_rowconfigure(r, weight=0)
-        self.body.grid_rowconfigure(7, weight=1)  # visor crece
+        # ---------------------------------------------------------
+        # NUEVO LAYOUT: 2 COLUMNAS PRINCIPALES
+        # ---------------------------------------------------------
+        # Columna 0: Controles (izquierda)
+        # Columna 1: Visor de datos (derecha)
+        self.body.grid_columnconfigure(0, weight=0)  # Controles - tamaño fijo
+        self.body.grid_columnconfigure(1, weight=1)  # Visor - se expande
+        self.body.grid_rowconfigure(0, weight=1)     # Fila única que se expande
+
+        # ---------------------------------------------------------
+        # PANEL IZQUIERDO - CONTROLES
+        # ---------------------------------------------------------
+        left_panel = ctk.CTkFrame(self.body)
+        left_panel.grid(row=0, column=0, sticky="nsew", padx=8, pady=8)
+        left_panel.grid_columnconfigure(0, weight=1)
+        
+        # Configurar filas del panel izquierdo
+        for i in range(8):
+            left_panel.grid_rowconfigure(i, weight=0)
+        left_panel.grid_rowconfigure(8, weight=1)  # Espacio flexible al final
 
         # 1) Configuración de tamaño (10^n) y longitud de clave
-        cfg_frame = ctk.CTkFrame(self.body)
-        cfg_frame.grid(row=0, column=0, sticky="ew", padx=8, pady=(8, 4))
+        cfg_frame = ctk.CTkFrame(left_panel)
+        cfg_frame.grid(row=0, column=0, sticky="ew", padx=0, pady=(0, 8))
         cfg_frame.grid_columnconfigure(6, weight=1)
 
         ctk.CTkLabel(cfg_frame, text="Tamaño (10^n):").grid(row=0, column=0, padx=(8, 6), pady=8, sticky="w")
@@ -64,37 +79,46 @@ class LinealContent(BaseContent):
         self.lbl_capacidad.grid(row=0, column=6, padx=(8, 8), pady=8, sticky="w")
 
         # 2) Operaciones: insertar / buscar / eliminar
-        ops_frame = ctk.CTkFrame(self.body)
-        ops_frame.grid(row=1, column=0, sticky="ew", padx=8, pady=4)
-        ops_frame.grid_columnconfigure(6, weight=1)
+        ops_frame = ctk.CTkFrame(left_panel)
+        ops_frame.grid(row=1, column=0, sticky="ew", padx=0, pady=(0, 8))
+        ops_frame.grid_columnconfigure(1, weight=1)  # Cambiado: la columna 1 se expande
 
+        # Fila 0: Etiqueta "Clave:" y campo de entrada
         ctk.CTkLabel(ops_frame, text="Clave:").grid(row=0, column=0, padx=(8, 6), pady=8, sticky="w")
-        self.entry_key = ctk.CTkEntry(ops_frame, textvariable=self.var_key, width=160)
-        self.entry_key.grid(row=0, column=1, padx=(0, 8), pady=8)
+        self.entry_key = ctk.CTkEntry(ops_frame, textvariable=self.var_key)
+        self.entry_key.grid(row=0, column=1, padx=(0, 8), pady=8, sticky="w") 
 
-        self.btn_insert = ctk.CTkButton(ops_frame, text="Insertar", command=self.on_insertar, state="disabled")
-        self.btn_insert.grid(row=0, column=2, padx=(0, 6), pady=8)
+        # Botones de operaciones en una fila separada
+        buttons_frame = ctk.CTkFrame(ops_frame)
+        buttons_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=8, pady=(0, 8))
+        buttons_frame.grid_columnconfigure(0, weight=1)
+        buttons_frame.grid_columnconfigure(1, weight=1)
+        buttons_frame.grid_columnconfigure(2, weight=1)
+        self.btn_insert = ctk.CTkButton(buttons_frame, text="Insertar", command=self.on_insertar, state="disabled")
+        self.btn_insert.grid(row=0, column=0, padx=4, pady=4)
 
-        self.btn_buscar = ctk.CTkButton(ops_frame, text="Buscar", command=self.on_buscar, state="disabled")
-        self.btn_buscar.grid(row=0, column=3, padx=(0, 6), pady=8)
+        self.btn_buscar = ctk.CTkButton(buttons_frame, text="Buscar", command=self.on_buscar, state="disabled")
+        self.btn_buscar.grid(row=0, column=1, padx=4, pady=4)
 
-        self.btn_eliminar = ctk.CTkButton(ops_frame, text="Eliminar", command=self.on_eliminar, state="disabled")
-        self.btn_eliminar.grid(row=0, column=4, padx=(0, 6), pady=8, sticky="w")
+        self.btn_eliminar = ctk.CTkButton(buttons_frame, text="Eliminar", command=self.on_eliminar, state="disabled")
+        self.btn_eliminar.grid(row=0, column=2, padx=4, pady=4)
 
         # 3) Generación aleatoria
-        gen_frame = ctk.CTkFrame(self.body)
-        gen_frame.grid(row=2, column=0, sticky="ew", padx=8, pady=4)
-        gen_frame.grid_columnconfigure(4, weight=1)
+        gen_frame = ctk.CTkFrame(left_panel)
+        gen_frame.grid(row=2, column=0, sticky="ew", padx=0, pady=(0, 8))
+        gen_frame.grid_columnconfigure(0, weight=1)
+        
         ctk.CTkLabel(gen_frame, text="Generar aleatorios:").grid(row=0, column=0, padx=(8, 6), pady=8, sticky="w")
         self.entry_gen = ctk.CTkEntry(gen_frame, textvariable=self.var_gen_count, width=100)
-        self.entry_gen.grid(row=0, column=1, padx=(0, 8), pady=8)
+        self.entry_gen.grid(row=0, column=1, padx=(0, 8), pady=8, sticky="w")
         self.btn_generar = ctk.CTkButton(gen_frame, text="Generar", command=self.on_generar, state="disabled")
-        self.btn_generar.grid(row=0, column=2, padx=(0, 8), pady=8)
+        self.btn_generar.grid(row=0, column=2, padx=(0, 8), pady=8, sticky="w")
 
         # 4) Guardar / Cargar
-        io_frame = ctk.CTkFrame(self.body)
-        io_frame.grid(row=3, column=0, sticky="ew", padx=8, pady=4)
-        io_frame.grid_columnconfigure(2, weight=1)
+        io_frame = ctk.CTkFrame(left_panel)
+        io_frame.grid(row=3, column=0, sticky="ew", padx=0, pady=(0, 8))
+        io_frame.grid_columnconfigure(0, weight=1)
+        io_frame.grid_columnconfigure(1, weight=1)
 
         self.btn_guardar = ctk.CTkButton(io_frame, text="Guardar estructura", command=self.on_guardar, state="disabled")
         self.btn_guardar.grid(row=0, column=0, padx=8, pady=8)
@@ -103,33 +127,51 @@ class LinealContent(BaseContent):
         self.btn_cargar.grid(row=0, column=1, padx=8, pady=8)
 
         # 5) Paso a paso
-        step_frame = ctk.CTkFrame(self.body)
-        step_frame.grid(row=4, column=0, sticky="ew", padx=8, pady=4)
-        step_frame.grid_columnconfigure(6, weight=1)
+        step_frame = ctk.CTkFrame(left_panel)
+        step_frame.grid(row=4, column=0, sticky="ew", padx=0, pady=(0, 8))
+        step_frame.grid_columnconfigure(0, weight=1)
+        
         ctk.CTkLabel(step_frame, text="Búsqueda paso a paso:").grid(row=0, column=0, padx=(8, 6), pady=8, sticky="w")
-        self.btn_step_start = ctk.CTkButton(step_frame, text="Iniciar", command=self.on_step_start, state="disabled")
-        self.btn_step_start.grid(row=0, column=1, padx=4, pady=8)
-        self.btn_step_next = ctk.CTkButton(step_frame, text="Paso", command=self.on_step_next, state="disabled")
-        self.btn_step_next.grid(row=0, column=2, padx=4, pady=8)
-        self.btn_step_auto = ctk.CTkButton(step_frame, text="Auto", command=self.on_step_auto, state="disabled")
-        self.btn_step_auto.grid(row=0, column=3, padx=4, pady=8)
-        self.btn_step_stop = ctk.CTkButton(step_frame, text="Detener", command=self.on_step_stop, state="disabled")
-        self.btn_step_stop.grid(row=0, column=4, padx=4, pady=8)
+        
+        step_buttons_frame = ctk.CTkFrame(step_frame)
+        step_buttons_frame.grid(row=1, column=0, sticky="ew", padx=8, pady=(0, 8))
+        step_buttons_frame.grid_columnconfigure(0, weight=1)
+        step_buttons_frame.grid_columnconfigure(1, weight=1)
+        step_buttons_frame.grid_columnconfigure(2, weight=1)
+        step_buttons_frame.grid_columnconfigure(3, weight=1)
 
-        # 6) Estado y visor
-        self.lbl_estado = ctk.CTkLabel(self.body, text="Listo.")
-        self.lbl_estado.grid(row=5, column=0, sticky="ew", padx=16, pady=(4, 0))
+        self.btn_step_start = ctk.CTkButton(step_buttons_frame, text="Iniciar", command=self.on_step_start, state="disabled")
+        self.btn_step_start.grid(row=0, column=0, padx=2, pady=4)
 
-        viewer_frame = ctk.CTkFrame(self.body)
-        viewer_frame.grid(row=7, column=0, sticky="nsew", padx=8, pady=(8, 12))
-        viewer_frame.grid_rowconfigure(0, weight=0)
-        viewer_frame.grid_rowconfigure(1, weight=1)
-        viewer_frame.grid_columnconfigure(0, weight=1)
-        ctk.CTkLabel(viewer_frame, text="Contenido (máx. 1000 elementos)").grid(
-            row=0, column=0, sticky="w", padx=8, pady=(8, 0)
-        )
-        self.viewer = ctk.CTkTextbox(viewer_frame, wrap="none")
-        self.viewer.grid(row=1, column=0, sticky="nsew", padx=8, pady=8)
+        self.btn_step_next = ctk.CTkButton(step_buttons_frame, text="Paso", command=self.on_step_next, state="disabled")
+        self.btn_step_next.grid(row=0, column=1, padx=2, pady=4)
+
+        self.btn_step_auto = ctk.CTkButton(step_buttons_frame, text="Auto", command=self.on_step_auto, state="disabled")
+        self.btn_step_auto.grid(row=0, column=2, padx=2, pady=4)
+
+        self.btn_step_stop = ctk.CTkButton(step_buttons_frame, text="Detener", command=self.on_step_stop, state="disabled")
+        self.btn_step_stop.grid(row=0, column=3, padx=2, pady=4)
+
+        # 6) Estado
+        self.lbl_estado = ctk.CTkLabel(left_panel, text="Listo.")
+        self.lbl_estado.grid(row=5, column=0, sticky="ew", padx=8, pady=(0, 8))
+
+        # ---------------------------------------------------------
+        # PANEL DERECHO - VISOR DE DATOS
+        # ---------------------------------------------------------
+        right_panel = ctk.CTkFrame(self.body)
+        right_panel.grid(row=0, column=1, sticky="nsew", padx=(0, 8), pady=8)
+        right_panel.grid_rowconfigure(0, weight=0)
+        right_panel.grid_rowconfigure(1, weight=1)
+        right_panel.grid_columnconfigure(0, weight=1)
+
+        # Título del visor
+        ctk.CTkLabel(right_panel, text="Contenido (máx. 1000 elementos)", 
+                    font=("", 14, "bold")).grid(row=0, column=0, sticky="w", padx=8, pady=(8, 4))
+
+        # Área de visualización de datos
+        self.viewer = ctk.CTkTextbox(right_panel, wrap="none")
+        self.viewer.grid(row=1, column=0, sticky="nsew", padx=8, pady=(0, 8))
 
         # Configure tags for highlighting (robust to CTkTextbox internals)
         try:
@@ -183,9 +225,9 @@ class LinealContent(BaseContent):
             for i in range(mostrar):
                 if i < len(items):
                     val = items[i]
-                    self.viewer.insert("end", f"[{i:>4}]  {val}\n")
+                    self.viewer.insert("end", f"[{i+1:>4}]  {val}\n")
                 else:
-                    self.viewer.insert("end", f"[{i:>4}]  —\n")
+                    self.viewer.insert("end", f"[{i+1:>4}]  —\n")
             if cap > mostrar:
                 self.viewer.insert("end", f"... ({cap - mostrar} elementos no mostrados)\n")
         # Highlight after text is present
@@ -231,7 +273,7 @@ class LinealContent(BaseContent):
             return False, None, f"La clave debe tener {self.structure.key_length} dígitos."
         return True, val, None
 
-    # Acciones
+    # Acciones (los métodos de acciones permanecen igual)
     def on_crear(self):
         if self.structure is not None:
             if not mb.askyesno("Confirmar", "Esto borrará la estructura actual. ¿Continuar?"):
@@ -273,12 +315,13 @@ class LinealContent(BaseContent):
             return
         try:
             idx = self.structure.insert(val)  # type: ignore[union-attr]
-            self._set_estado(f"Insertado {val} en índice {idx}.")
+            self._set_estado(f"Insertado {val} en índice {idx+1}.")
         except Exception as e:
             self._error(str(e))
             return
         self._update_counters()
         self._refresh_view()
+        self.var_key.set("")
 
     def on_buscar(self):
         ok, val, err = self._parse_key()
@@ -290,7 +333,7 @@ class LinealContent(BaseContent):
             self._set_estado(f"{val} no encontrado.")
             self._refresh_view()
         else:
-            self._set_estado(f"{val} encontrado en índice {idx}.")
+            self._set_estado(f"{val} encontrado en índice {idx+1}.")
             self._refresh_view(highlight_index=idx, found=True)
 
     def on_eliminar(self):
@@ -300,7 +343,7 @@ class LinealContent(BaseContent):
             return
         try:
             idx = self.structure.delete(val)  # type: ignore[union-attr]
-            self._set_estado(f"Eliminado {val} desde índice {idx}.")
+            self._set_estado(f"Eliminado {val} desde índice {idx+1}.")
         except Exception as e:
             self._error(str(e))
             return

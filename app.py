@@ -1,8 +1,11 @@
+from tkinter import font as tkFont
 import customtkinter as ctk
 
 from ui.sidebar import CollapsibleSidebar
 from ui.header import HeaderBar
 from views.graph_operations_view import GraphOperationsContent
+from views.graph_theory_view import GraphTheoryContent
+from views.spanning_trees_view import SpanningTreesContent
 from views.welcome import WelcomeContent
 from views.lineal import LinealContent
 from views.binaria import BinariaContent
@@ -20,11 +23,12 @@ from views.external_index import ExternalIndexView
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
+        print(tkFont.nametofont("TkDefaultFont").actual())
         self.title("Algoritmos · Búsquedas y Grafos")
-        self.geometry("1100x700")
+        self.after(100, lambda: self.state("zoomed"))
 
         # Apariencia y tema
-        ctk.set_appearance_mode("System")
+        ctk.set_appearance_mode("Light")
         ctk.set_default_color_theme("dark-blue")
 
         # Layout principal
@@ -67,7 +71,9 @@ class App(ctk.CTk):
             "externas:binaria": ExternalBinaryContent(self.content_container),
             "externas:dinamicas": ExternalDynamicContent(self.content_container),
             "externas:indices": ExternalIndexView(self.content_container),
-            "grafos:operaciones": GraphOperationsContent(self.content_container)
+            "grafos:operaciones": GraphOperationsContent(self.content_container),
+            "grafos:teoria": GraphTheoryContent(self.content_container),
+            "grafos:arboles": SpanningTreesContent(self.content_container)
         }
 
         self.show_content("welcome")
@@ -89,7 +95,8 @@ class App(ctk.CTk):
 
     def change_theme(self, mode_label: str):
         mapping = {"Sistema": "System", "Claro": "Light", "Oscuro": "Dark"}
-        ctk.set_appearance_mode(mapping.get(mode_label, "System"))
+        ctk.set_appearance_mode(mapping.get(mode_label, "Claro"))
+        self.sidebar.apply_theme_colors()
 
 
 def main():

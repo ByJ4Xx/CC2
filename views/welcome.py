@@ -9,37 +9,37 @@ class WelcomeContent(BaseContent):
         super().__init__(master)
 
         self.on_nav = on_nav
-        self.body.grid_columnconfigure(0, weight=1)
-        for r in range(3):
-            self.body.grid_rowconfigure(r, weight=0)
-        self.body.grid_rowconfigure(3, weight=1)
 
-        # Título azul
+        # Layout de filas y columnas
+        self.body.grid_columnconfigure(0, weight=1)
+        self.body.grid_rowconfigure(0, weight=0)
+        self.body.grid_rowconfigure(1, weight=0)
+        self.body.grid_rowconfigure(2, weight=1)
+
+        # ---------------------------------------------------------
+        #  TITULO PRINCIPAL - MÁS GRANDE
+        # ---------------------------------------------------------
         title = ctk.CTkLabel(
             self.body,
-            text="Ciencias de la Computacion 2",
-            font=("", 24, "bold"),
-            text_color=("#1565c0", "#90caf9"),
+            text="Ciencias de la Computación 2",
+            font=("", 36, "bold"),     # << Título más grande
+            text_color=("#0d47a1", "#90caf9"),
         )
-        title.grid(row=0, column=0, sticky="w", padx=8, pady=(8, 12))
+        title.grid(row=0, column=0, sticky="nsew", padx=12, pady=(20, 10))
 
+        # ---------------------------------------------------------
+        #  SUBTITULO - INSTRUCCIÓN AL USUARIO
+        # ---------------------------------------------------------
         subtitle = ctk.CTkLabel(
             self.body,
-            text="Accesos rápidos a los apartados:",
+            text="¡Bienvenido!\nUsa el menú lateral izquierdo para acceder a los apartados de la aplicación.",
+            font=("", 18),
+            text_color=("#000000", "#ffffff"),
         )
-        subtitle.grid(row=1, column=0, sticky="w", padx=8, pady=(0, 8))
+        subtitle.grid(row=1, column=0, sticky="nsew", padx=12, pady=(0, 10))
 
-        # Botones de acceso rápido
-        btns = ctk.CTkFrame(self.body)
-        btns.grid(row=2, column=0, sticky="w", padx=8, pady=(0, 8))
+        # ---------------------------------------------------------
+        #  SE ELIMINAN LOS ACCESOS RÁPIDOS COMPLETAMENTE
+        # ---------------------------------------------------------
+        # No hay botones ni frames adicionales aquí.
 
-        def go(key: str):
-            if callable(self.on_nav):
-                self.on_nav(key)
-
-        b1 = ctk.CTkButton(btns, text="B. Internas · Lineal", command=lambda: go("internas:lineal"))
-        b2 = ctk.CTkButton(btns, text="B. Internas · Binaria", command=lambda: go("internas:binaria"))
-        b3 = ctk.CTkButton(btns, text="B. Internas · F. Hash", command=lambda: go("internas:hash"))
-        b1.grid(row=0, column=0, padx=(0, 8), pady=4)
-        b2.grid(row=0, column=1, padx=(0, 8), pady=4)
-        b3.grid(row=0, column=2, padx=(0, 8), pady=4)

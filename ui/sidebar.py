@@ -34,17 +34,31 @@ class CollapsibleSidebar(ctk.CTkFrame):
         self.rowconfigure(1, weight=1)
         self.sections_container.columnconfigure(0, weight=1)
 
-        # B. Internas
-        self.btn_internas = ctk.CTkButton(
+        # BÚSQUEDAS (nuevo apartado principal)
+        self.btn_busquedas = ctk.CTkButton(
             self.sections_container,
-            text="B. Internas",
+            text="Búsquedas",
+            height=38,
+            corner_radius=8,
+            command=self._toggle_busquedas,
+        )
+        self.btn_busquedas.grid(row=0, column=0, sticky="ew", padx=8, pady=(0, 4))
+
+        self.panel_busquedas = ctk.CTkFrame(self.sections_container, fg_color="transparent")
+        self.panel_busquedas.grid(row=1, column=0, sticky="ew", padx=8, pady=(0, 8))
+        self.panel_busquedas.columnconfigure(0, weight=1)
+
+        # INTERNAS (dentro de Búsquedas)
+        self.btn_internas = ctk.CTkButton(
+            self.panel_busquedas,
+            text="Internas",
             height=38,
             corner_radius=8,
             command=self._toggle_internas,
         )
         self.btn_internas.grid(row=0, column=0, sticky="ew", padx=8, pady=(0, 4))
 
-        self.panel_internas = ctk.CTkFrame(self.sections_container, fg_color="transparent")
+        self.panel_internas = ctk.CTkFrame(self.panel_busquedas, fg_color="transparent")
         self.panel_internas.grid(row=1, column=0, sticky="ew", padx=8, pady=(0, 8))
         self.panel_internas.columnconfigure(0, weight=1)
 
@@ -132,17 +146,17 @@ class CollapsibleSidebar(ctk.CTkFrame):
         )
         self.btn_huffman.grid(row=6, column=0, sticky="ew", padx=8, pady=(4, 8))
 
-        # B. Externas
+        # EXTERNAS (dentro de Búsquedas)
         self.btn_externas = ctk.CTkButton(
-            self.sections_container,
-            text="B. Externas",
+            self.panel_busquedas,
+            text="Externas",
             height=38,
             corner_radius=8,
             command=self._toggle_externas,
         )
         self.btn_externas.grid(row=2, column=0, sticky="ew", padx=8, pady=(0, 4))
 
-        self.panel_externas = ctk.CTkFrame(self.sections_container, fg_color="transparent")
+        self.panel_externas = ctk.CTkFrame(self.panel_busquedas, fg_color="transparent")
         self.panel_externas.grid(row=3, column=0, sticky="ew", padx=8, pady=(0, 8))
         self.panel_externas.columnconfigure(0, weight=1)
 
@@ -180,9 +194,21 @@ class CollapsibleSidebar(ctk.CTkFrame):
             anchor="w",
             command=lambda: self.on_select("externas", "dinamicas"),
         )
-        self.btn_ext_dynamic.grid(row=2, column=0, sticky="ew", padx=8, pady=(4, 8))
+        self.btn_ext_dynamic.grid(row=2, column=0, sticky="ew", padx=8, pady=4)
 
-        # Grafos
+        self.btn_ext_indices = ctk.CTkButton(
+            self.panel_externas,
+            text="Índices",
+            height=34,
+            fg_color="transparent",
+            hover_color=("#e5f0ff", "#16324a"),
+            corner_radius=8,
+            anchor="w",
+            command=lambda: self.on_select("externas", "indices"),
+        )
+        self.btn_ext_indices.grid(row=3, column=0, sticky="ew", padx=8, pady=(4, 8))
+
+        # GRAFOS (se mantiene igual)
         self.btn_grafos = ctk.CTkButton(
             self.sections_container,
             text="Grafos",
@@ -190,11 +216,12 @@ class CollapsibleSidebar(ctk.CTkFrame):
             corner_radius=8,
             command=self._toggle_grafos,
         )
-        self.btn_grafos.grid(row=4, column=0, sticky="ew", padx=8, pady=(0, 4))
+        self.btn_grafos.grid(row=2, column=0, sticky="ew", padx=8, pady=(0, 4))
 
         self.panel_grafos = ctk.CTkFrame(self.sections_container, fg_color="transparent")
-        self.panel_grafos.grid(row=5, column=0, sticky="ew", padx=8, pady=(0, 8))
+        self.panel_grafos.grid(row=3, column=0, sticky="ew", padx=8, pady=(0, 8))
         self.panel_grafos.columnconfigure(0, weight=1)
+
         # Botón para acceder a las Operaciones de Grafos
         self.btn_grafos_operaciones = ctk.CTkButton(
             self.panel_grafos,
@@ -206,8 +233,37 @@ class CollapsibleSidebar(ctk.CTkFrame):
             anchor="w",
             command=lambda: self.on_select("grafos", "operaciones"),
         )
-        self.btn_grafos_operaciones.grid(row=0, column=0, sticky="ew", padx=8, pady=(8, 8))
+        self.btn_grafos_operaciones.grid(row=0, column=0, sticky="ew", padx=8, pady=(8, 4))
 
+        # Botón para Teoría de Grafos
+        self.btn_grafos_teoria = ctk.CTkButton(
+            self.panel_grafos,
+            text="Teoría de Grafos",
+            height=34,
+            fg_color="transparent",
+            hover_color=("#e5f0ff", "#16324a"),
+            corner_radius=8,
+            anchor="w",
+            command=lambda: self.on_select("grafos", "teoria"),
+        )
+        self.btn_grafos_teoria.grid(row=1, column=0, sticky="ew", padx=8, pady=4)
+
+        # Botón para Árboles de Expansión
+        self.btn_grafos_arboles = ctk.CTkButton(
+            self.panel_grafos,
+            text="Árboles de Expansión",
+            height=34,
+            fg_color="transparent",
+            hover_color=("#e5f0ff", "#16324a"),
+            corner_radius=8,
+            anchor="w",
+            command=lambda: self.on_select("grafos", "arboles"),
+        )
+        self.btn_grafos_arboles.grid(row=2, column=0, sticky="ew", padx=8, pady=(4, 8))
+
+        # Initially collapse all panels
+        self._collapse_panel(self.panel_busquedas)
+        self._collapse_panel(self.panel_internas)
         self._collapse_panel(self.panel_externas)
         self._collapse_panel(self.panel_grafos)
 
@@ -223,8 +279,21 @@ class CollapsibleSidebar(ctk.CTkFrame):
             "externas:secuencial": self.btn_ext_seq,
             "externas:binaria": self.btn_ext_bin,
             "externas:dinamicas": self.btn_ext_dynamic,
+            "externas:indices": self.btn_ext_indices,
             "grafos:operaciones": self.btn_grafos_operaciones,
+            "grafos:teoria": self.btn_grafos_teoria,
+            "grafos:arboles": self.btn_grafos_arboles,
         }
+        self.apply_theme_colors()
+
+    def apply_theme_colors(self):
+        # Modo claro → negro | Modo oscuro → blanco
+        text = ("black", "white")
+        hover = ("#e5f0ff", "#16324a")
+
+        for btn in self.sub_buttons.values():
+            btn.configure(text_color=text, hover_color=hover)
+
 
     def toggle(self):
         self.expanded = not self.expanded
@@ -238,18 +307,21 @@ class CollapsibleSidebar(ctk.CTkFrame):
             self.grid_propagate(False)
             self._set_button_texts(False)
             self.sections_container.grid_remove()
+            self._collapse_panel(self.panel_busquedas)
             self._collapse_panel(self.panel_internas)
             self._collapse_panel(self.panel_externas)
             self._collapse_panel(self.panel_grafos)
 
     def _set_button_texts(self, expanded: bool):
         if expanded:
-            self.btn_internas.configure(text="B. Internas")
-            self.btn_externas.configure(text="B. Externas")
+            self.btn_busquedas.configure(text="Búsquedas")
             self.btn_grafos.configure(text="Grafos")
         else:
             # Hidden container, keep full text for when it reappears
             pass
+
+    def _toggle_busquedas(self):
+        self._toggle_panel(self.panel_busquedas)
 
     def _toggle_internas(self):
         self._toggle_panel(self.panel_internas)
