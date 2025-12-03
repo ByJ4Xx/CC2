@@ -453,13 +453,19 @@ class GraphTheoryContent(ctk.CTkFrame):
             return
 
         matrix, vertices, edges = self.graph.vertex_incidence_matrix()
+
+        if self.graph.is_directed:
+            desc = "Dirigido: 1=sale del vértice, -1=entra al vértice, 0=no incidente"
+        else:
+            desc = "No dirigido: 1=vértice incidente, 0=no incidente"
+
         self._show_matrix_window(
             "Matriz de Incidencia Vértice-Arista",
             matrix,
             vertices,
             edges,
             "📊 MATRIZ DE INCIDENCIA VÉRTICE-ARISTA",
-            "M[i][j] = 1 si el vértice i es incidente a la arista j"
+            desc
         )
 
     def _show_matrix_window(self, title, matrix, row_labels, col_labels, header_title, header_desc):
@@ -690,6 +696,8 @@ class GraphTheoryContent(ctk.CTkFrame):
         for i, item in enumerate(items):
             item_edges = set(item.get("edges", []))
             is_fundamental = tuple(sorted(item_edges)) in fundamental_edges
+            # Obtener información de dirección para grafos dirigidos
+            edge_directions = item.get("edge_directions", {})
 
             # Etiqueta de fila
             row_label = f"{['C', 'K'][i % 2]}{item.get('id', i+1)}"  # Alterna C y K
@@ -703,12 +711,29 @@ class GraphTheoryContent(ctk.CTkFrame):
 
             # Datos
             for j, edge in enumerate(edges_list):
-                value = 1 if edge in item_edges else 0
-                bg_color = "#5dade2" if (value == 1 and is_fundamental) else "#d4e8f0" if value == 1 else "white"
+                # Determinar el valor a mostrar
+                if edge in item_edges:
+                    # Si hay información de dirección, usarla; si no, mostrar 1
+                    value = edge_directions.get(edge, 1)
+                else:
+                    value = 0
+
+                # Determinar color de fondo según valor y tipo fundamental
+                if value == 1 and is_fundamental:
+                    bg_color = "#5dade2"
+                elif value == 1:
+                    bg_color = "#d4e8f0"
+                elif value == -1 and is_fundamental:
+                    bg_color = "#f39c12"  # Naranja para -1 fundamental
+                elif value == -1:
+                    bg_color = "#fadab9"  # Naranja claro para -1 no fundamental
+                else:
+                    bg_color = "white"
+
                 ctk.CTkLabel(
                     table_frame,
                     text=str(value),
-                    font=("Segoe UI", 10, "bold" if value == 1 else "normal"),
+                    font=("Segoe UI", 10, "bold" if value != 0 else "normal"),
                     text_color="#000000",
                     fg_color=bg_color
                 ).grid(row=i+1, column=j+1, padx=5, pady=10, sticky="ew")

@@ -101,7 +101,8 @@ class GraphTheory:
     def vertex_adjacency_matrix(self) -> Tuple[np.ndarray, List[str]]:
         """
         Matriz de adyacencia de vértices
-        M[i][j] = número de aristas entre vértice i y vértice j
+        Para grafos NO dirigidos: M[i][j] = número de aristas entre vértice i y vértice j (simétrica)
+        Para grafos DIRIGIDOS: M[i][j] = número de aristas desde vértice i hacia vértice j
         """
         vertices_list = sorted(list(self.vertices))
         n = len(vertices_list)
@@ -114,8 +115,10 @@ class GraphTheory:
             i = vertex_to_idx[v1]
             j = vertex_to_idx[v2]
             if self.is_directed:
+                # Solo desde v1 hacia v2
                 matrix[i][j] += 1
             else:
+                # Bidireccional
                 matrix[i][j] += 1
                 matrix[j][i] += 1
 
@@ -125,6 +128,7 @@ class GraphTheory:
         """
         Matriz de adyacencia de aristas
         M[i][j] = 1 si las aristas i y j comparten un vértice, 0 en caso contrario
+        (Mismo para dirigidos y no dirigidos)
         """
         edges_list = sorted(list(self.edges.keys()))
         n = len(edges_list)
@@ -145,7 +149,11 @@ class GraphTheory:
     def vertex_incidence_matrix(self) -> Tuple[np.ndarray, List[str], List[str]]:
         """
         Matriz de incidencia vértice-arista
-        M[i][j] = 1 si el vértice i es incidente a la arista j, 0 en caso contrario
+        Para grafos NO dirigidos: M[i][j] = 1 si el vértice i es incidente a la arista j
+        Para grafos DIRIGIDOS:
+            - M[i][j] = 1 si la arista sale del vértice i (vértice es la cola)
+            - M[i][j] = -1 si la arista entra al vértice i (vértice es la cabeza)
+            - M[i][j] = 0 en caso contrario
         """
         vertices_list = sorted(list(self.vertices))
         edges_list = sorted(list(self.edges.keys()))
@@ -161,16 +169,27 @@ class GraphTheory:
             v1, v2 = edge_data[0], edge_data[1]
             i1 = vertex_to_idx[v1]
             i2 = vertex_to_idx[v2]
-            matrix[i1][j] = 1
-            if v1 != v2:  # No contar loops dos veces
-                matrix[i2][j] = 1
+
+            if self.is_directed:
+                # Para grafos dirigidos: v1 es la cola (sale=1), v2 es la cabeza (entra=-1)
+                matrix[i1][j] = 1   # Arista sale de v1
+                matrix[i2][j] = -1  # Arista entra a v2
+            else:
+                # Para grafos no dirigidos: ambos vértices son incidentes (1)
+                matrix[i1][j] = 1
+                if v1 != v2:  # No contar loops dos veces
+                    matrix[i2][j] = 1
 
         return matrix, vertices_list, edges_list
 
     def edge_incidence_matrix(self) -> Tuple[np.ndarray, List[str], List[str]]:
         """
         Matriz de incidencia arista-vértice (transpuesta de vertex_incidence)
-        M[i][j] = 1 si la arista i es incidente al vértice j, 0 en caso contrario
+        Para grafos NO dirigidos: M[i][j] = 1 si la arista i es incidente al vértice j
+        Para grafos DIRIGIDOS:
+            - M[i][j] = 1 si la arista i sale del vértice j (vértice es la cola)
+            - M[i][j] = -1 si la arista i entra al vértice j (vértice es la cabeza)
+            - M[i][j] = 0 en caso contrario
         """
         vertex_matrix, vertices_list, edges_list = self.vertex_incidence_matrix()
         return vertex_matrix.T, edges_list, vertices_list
@@ -208,6 +227,9 @@ class GraphTheory:
         """
         Encuentra todos los circuitos (ciclos) en el grafo
         Retorna información detallada de cada circuito
+
+        Para grafos DIRIGIDOS: También retorna información de dirección
+        - edge_directions: dict con edge_name -> 1 (dirección correcta) o -1 (dirección opuesta)
         """
         cycles = self.find_all_cycles()
         circuits = []
@@ -215,6 +237,8 @@ class GraphTheory:
         for i, cycle in enumerate(cycles):
             # Encontrar las aristas del circuito
             circuit_edges = []
+            edge_directions = {}  # Para grafos dirigidos
+
             for j in range(len(cycle)):
                 v1 = cycle[j]
                 v2 = cycle[(j + 1) % len(cycle)]
@@ -222,16 +246,36 @@ class GraphTheory:
                 # Buscar la arista entre v1 y v2
                 for edge_name, edge_data in self.edges.items():
                     e_v1, e_v2 = edge_data[0], edge_data[1]
-                    if (e_v1 == v1 and e_v2 == v2) or (e_v1 == v2 and e_v2 == v1):
-                        circuit_edges.append(edge_name)
-                        break
+                    if self.is_directed:
+                        # Para dirigidos: buscar arista exacta en la dirección del ciclo
+                        if e_v1 == v1 and e_v2 == v2:
+                            circuit_edges.append(edge_name)
+                            edge_directions[edge_name] = 1
+                            break
+                        elif e_v1 == v2 and e_v2 == v1:
+                            # La arista existe pero en dirección opuesta
+                            circuit_edges.append(edge_name)
+                            edge_directions[edge_name] = -1
+                            break
+                    else:
+                        # Para no dirigidos: buscar en ambas direcciones
+                        if (e_v1 == v1 and e_v2 == v2) or (e_v1 == v2 and e_v2 == v1):
+                            circuit_edges.append(edge_name)
+                            edge_directions[edge_name] = 1
+                            break
 
-            circuits.append({
+            circuit_data = {
                 "id": i + 1,
                 "vertices": cycle,
                 "edges": circuit_edges,
                 "length": len(cycle)
-            })
+            }
+
+            # Agregar información de dirección para grafos dirigidos
+            if self.is_directed:
+                circuit_data["edge_directions"] = edge_directions
+
+            circuits.append(circuit_data)
 
         return circuits
 
@@ -239,6 +283,8 @@ class GraphTheory:
         """
         Encuentra los ciclos fundamentales respecto a un árbol generador
         Si no se proporciona árbol, se calcula uno usando DFS
+
+        Para grafos DIRIGIDOS: Retorna también edge_directions con información de dirección
         """
         G = self._to_networkx()
 
@@ -274,25 +320,37 @@ class GraphTheory:
                 # Encontrar camino en el árbol entre v1 y v2
                 path = nx.shortest_path(tree_graph, v1, v2)
 
-                # Construir lista de aristas del camino
+                # Construir lista de aristas del camino con dirección
                 path_edges = []
+                edge_directions = {}
                 for i in range(len(path) - 1):
                     for edge_name in spanning_tree_edges:
                         edge_data = self.edges[edge_name]
                         e_v1, e_v2 = edge_data[0], edge_data[1]
-                        if (e_v1 == path[i] and e_v2 == path[i+1]) or \
-                           (e_v1 == path[i+1] and e_v2 == path[i]):
+                        if e_v1 == path[i] and e_v2 == path[i+1]:
                             path_edges.append(edge_name)
+                            edge_directions[edge_name] = 1
+                            break
+                        elif e_v1 == path[i+1] and e_v2 == path[i]:
+                            path_edges.append(edge_name)
+                            edge_directions[edge_name] = -1
                             break
 
                 # El ciclo fundamental es el camino + la cuerda
-                fundamental.append({
+                cycle_data = {
                     "chord": chord_name,
                     "vertices": path,
                     "tree_edges": path_edges,
                     "all_edges": path_edges + [chord_name],
                     "length": len(path)
-                })
+                }
+
+                # Agregar dirección de la cuerda si es dirigido
+                if self.is_directed:
+                    edge_directions[chord_name] = 1  # La cuerda siempre se cuenta en su dirección original
+                    cycle_data["edge_directions"] = edge_directions
+
+                fundamental.append(cycle_data)
             except nx.NetworkXNoPath:
                 continue
 
@@ -305,6 +363,8 @@ class GraphTheory:
         Encuentra conjuntos de corte (edge cuts) mínimos del grafo.
         Un conjunto de corte es un conjunto mínimo de aristas cuya remoción
         desconecta el grafo o aumenta el número de componentes conexas.
+
+        Para grafos DIRIGIDOS: Se trata el grafo como no dirigido para encontrar cortes
         """
         from itertools import combinations
 
@@ -392,6 +452,8 @@ class GraphTheory:
         Encuentra los conjuntos de corte fundamentales respecto a un árbol generador
         Para cada arista del árbol, su conjunto de corte fundamental es el conjunto
         de aristas cuya eliminación desconecta el grafo en dos componentes
+
+        Para grafos DIRIGIDOS: Se trata el grafo como no dirigido para encontrar cortes
         """
         G = self._to_networkx()
 
