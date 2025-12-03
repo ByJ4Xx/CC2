@@ -18,11 +18,13 @@ import numpy as np
 @dataclass
 class WeightedGraph:
     """
-    Grafo ponderado para árboles de expansión
-    Soporta grafos no dirigidos con pesos en las aristas
+    Grafo para árboles de expansión
+    Soporta grafos dirigidos/no dirigidos, con o sin pesos
     """
     vertices: Set[str] = field(default_factory=set)
     edges: Dict[str, Tuple[str, str, float]] = field(default_factory=dict)  # nombre -> (v1, v2, peso)
+    is_directed: bool = False  # True para grafos dirigidos
+    has_weights: bool = True   # True para grafos con pesos, False para no ponderados
 
     def __post_init__(self):
         """Valida que las aristas tengan vértices válidos"""
@@ -49,6 +51,66 @@ class WeightedGraph:
             return True
         return False
 
+    def remove_vertex(self, vertex: str) -> bool:
+        """Elimina un vértice y todas sus aristas asociadas"""
+        if vertex not in self.vertices:
+            return False
+
+        self.vertices.discard(vertex)
+        # Eliminar todas las aristas que contienen este vértice
+        edges_to_remove = [
+            name for name, (v1, v2, weight) in self.edges.items()
+            if v1 == vertex or v2 == vertex
+        ]
+        for edge_name in edges_to_remove:
+            del self.edges[edge_name]
+        return True
+
+    def edit_edge(self, edge_name: str, new_weight: float) -> bool:
+        """Modifica el peso de una arista existente"""
+        if edge_name not in self.edges:
+            return False
+        v1, v2, _ = self.edges[edge_name]
+        self.edges[edge_name] = (v1, v2, new_weight)
+        return True
+
+    def get_graph_info(self) -> Dict:
+        """Retorna información completa del grafo"""
+        total_weight = sum(w for _, _, w in self.edges.values())
+
+        # Calcular grado de cada vértice
+        degrees = {}
+        for vertex in self.vertices:
+            degree = 0
+            for _, (v1, v2, _) in self.edges.items():
+                if self.is_directed:
+                    if v1 == vertex:
+                        degree += 1  # Grado de salida
+                else:
+                    if v1 == vertex or v2 == vertex:
+                        degree += 1
+            degrees[vertex] = degree
+
+        return {
+            "num_vertices": len(self.vertices),
+            "num_edges": len(self.edges),
+            "is_directed": self.is_directed,
+            "has_weights": self.has_weights,
+            "is_connected": self.is_connected(),
+            "total_weight": total_weight,
+            "degrees": degrees,
+            "vertices": sorted(list(self.vertices)),
+            "edges": [
+                {
+                    "name": name,
+                    "v1": v1,
+                    "v2": v2,
+                    "weight": weight
+                }
+                for name, (v1, v2, weight) in sorted(self.edges.items())
+            ]
+        }
+
     def _to_networkx(self) -> nx.Graph:
         """Convierte el grafo a formato NetworkX"""
         G = nx.Graph()
@@ -56,6 +118,133 @@ class WeightedGraph:
         for edge_name, (v1, v2, weight) in self.edges.items():
             G.add_edge(v1, v2, name=edge_name, weight=weight)
         return G
+
+    def get_complement_graph(self) -> 'WeightedGraph':
+        """
+        Calcula el complemento del grafo
+        Retorna un nuevo grafo con las aristas que no existen en el original
+        """
+        complement = WeightedGraph(
+            is_directed=self.is_directed,
+            has_weights=self.has_weights
+        )
+        complement.vertices = self.vertices.copy()
+
+        # Obtener todas las aristas posibles
+        vertices_list = sorted(list(self.vertices))
+        existing_edges = set()
+
+        # Guardar pares de vértices que ya tienen arista
+        for v1, v2, _ in self.edges.values():
+            edge_pair = tuple(sorted([v1, v2]))
+            existing_edges.add(edge_pair)
+
+        # Agregar aristas que NO existen en el grafo original
+        edge_counter = 1
+        for i, v1 in enumerate(vertices_list):
+            for v2 in vertices_list[i + 1:]:
+                edge_pair = tuple(sorted([v1, v2]))
+                if edge_pair not in existing_edges:
+                    complement.add_edge(f"c{edge_counter}", v1, v2, weight=1.0)
+                    edge_counter += 1
+
+        return complement
+
+    def get_subgraph(self, vertices_subset: Set[str]) -> 'WeightedGraph':
+        """
+        Crea un subgrafo con solo los vértices especificados y sus aristas
+        """
+        subgraph = WeightedGraph(
+            is_directed=self.is_directed,
+            has_weights=self.has_weights
+        )
+        subgraph.vertices = vertices_subset.copy()
+
+        # Agregar solo las aristas cuyos vértices están en el subconjunto
+        for edge_name, (v1, v2, weight) in self.edges.items():
+            if v1 in vertices_subset and v2 in vertices_subset:
+                subgraph.add_edge(edge_name, v1, v2, weight)
+
+        return subgraph
+
+    def find_tree_center(self, spanning_tree_edges: Optional[Set[str]] = None) -> Dict:
+        """
+        Encuentra el centro del árbol de expansión
+        Elimina iterativamente los vértices con grado 1 (hojas)
+        hasta quedarse con 1 o 2 vértices
+
+        Args:
+            spanning_tree_edges: Conjunto de aristas que forman el árbol.
+                                Si es None, se calcula el MST automáticamente.
+
+        Returns:
+            Dict con información del centro
+        """
+        # Si no se proporciona árbol, calcular MST
+        if spanning_tree_edges is None:
+            mst_result = self.minimum_spanning_tree()
+            if not mst_result["success"]:
+                return mst_result
+            spanning_tree_edges = set(mst_result["edge_names"])
+
+        # Crear una copia del árbol para no modificar el grafo original
+        tree_vertices = self.vertices.copy()
+        tree_edges = {}
+
+        for edge_name in spanning_tree_edges:
+            if edge_name in self.edges:
+                tree_edges[edge_name] = self.edges[edge_name]
+
+        # Eliminar iterativamente hojas (grado 1)
+        while len(tree_vertices) > 2:
+            # Calcular grados en el árbol actual
+            degrees = {v: 0 for v in tree_vertices}
+            for _, (v1, v2, _) in tree_edges.items():
+                if v1 in tree_vertices:
+                    degrees[v1] += 1
+                if v2 in tree_vertices:
+                    degrees[v2] += 1
+
+            # Encontrar hojas (grado 1)
+            leaves = [v for v, d in degrees.items() if d == 1]
+
+            if not leaves:
+                break
+
+            # Eliminar hojas
+            for leaf in leaves:
+                tree_vertices.discard(leaf)
+                # Eliminar aristas que contienen la hoja
+                edges_to_remove = [
+                    name for name, (v1, v2, _) in tree_edges.items()
+                    if v1 == leaf or v2 == leaf
+                ]
+                for edge_name in edges_to_remove:
+                    del tree_edges[edge_name]
+
+        center_vertices = sorted(list(tree_vertices))
+
+        # Verificar si es centro (1 vértice) o bicentro (2 vértices)
+        is_bicentro = len(center_vertices) == 2
+        is_connected_bicentro = False
+
+        if is_bicentro:
+            # Verificar si los dos vértices están conectados en el árbol original
+            v1, v2 = center_vertices[0], center_vertices[1]
+            for edge_name in spanning_tree_edges:
+                edge_v1, edge_v2, _ = self.edges[edge_name]
+                if (edge_v1 == v1 and edge_v2 == v2) or (edge_v1 == v2 and edge_v2 == v1):
+                    is_connected_bicentro = True
+                    break
+
+        return {
+            "success": True,
+            "center_vertices": center_vertices,
+            "is_center": len(center_vertices) == 1,
+            "is_bicentro": is_bicentro,
+            "is_connected_bicentro": is_connected_bicentro,
+            "num_centers": len(center_vertices)
+        }
 
     # ==================== ÁRBOLES GENERADORES ====================
 
@@ -390,6 +579,265 @@ class WeightedGraph:
             "tree_edges": spanning_tree_edges
         }
 
+    def find_cut_sets(self) -> Dict:
+        """
+        Encuentra los conjuntos de corte del grafo.
+        Un conjunto de corte es un conjunto mínimo de aristas cuya remoción
+        desconecta el grafo o aumenta el número de componentes conexas.
+
+        Returns:
+            Dict con los conjuntos de corte encontrados
+        """
+        from itertools import combinations
+
+        G = self._to_networkx()
+
+        if not nx.is_connected(G):
+            return {
+                "success": False,
+                "error": "El grafo no es conexo"
+            }
+
+        cut_sets = []
+        edge_names_list = list(self.edges.keys())
+
+        # Buscar puentes (aristas cuya remoción desconecta el grafo)
+        bridges = list(nx.bridges(G))
+        bridge_names = []
+        for bridge in bridges:
+            # Encontrar el nombre de la arista
+            for edge_name, (v1, v2, _) in self.edges.items():
+                if (v1, v2) == bridge or (v2, v1) == bridge:
+                    bridge_names.append(edge_name)
+                    cut_sets.append({
+                        "edges": [edge_name],
+                        "vertices": [v1, v2],
+                        "type": "bridge",
+                        "cardinality": 1
+                    })
+                    break
+
+        # Buscar conjuntos de corte de mayor cardinalidad
+        if len(edge_names_list) <= 15:  # Solo para grafos pequeños
+            # Buscar por cardinalidad: primero de tamaño 2, luego 3, etc.
+            for size in range(2, len(edge_names_list)):
+                found_any = False
+
+                for combination in combinations(edge_names_list, size):
+                    # Crear grafo de prueba sin estas aristas
+                    G_test = nx.Graph()
+                    G_test.add_nodes_from(self.vertices)
+
+                    for edge_name, (v1, v2, weight) in self.edges.items():
+                        if edge_name not in combination:
+                            G_test.add_edge(v1, v2)
+
+                    # Verificar si es un conjunto de corte
+                    if not nx.is_connected(G_test):
+                        # Verificar que no es superset de otro conjunto de corte
+                        is_minimal = True
+                        for cut_set in cut_sets:
+                            if set(cut_set["edges"]).issubset(set(combination)):
+                                is_minimal = False
+                                break
+
+                        # Verificar que no es duplicado
+                        is_duplicate = any(
+                            set(cs["edges"]) == set(combination) for cs in cut_sets
+                        )
+
+                        if is_minimal and not is_duplicate:
+                            # Obtener vértices involucrados
+                            vertices_involved = set()
+                            for edge_name in combination:
+                                v1, v2, _ = self.edges[edge_name]
+                                vertices_involved.add(v1)
+                                vertices_involved.add(v2)
+
+                            cut_sets.append({
+                                "edges": list(combination),
+                                "vertices": sorted(list(vertices_involved)),
+                                "type": "cut_set",
+                                "cardinality": size
+                            })
+                            found_any = True
+
+                # Si no encontramos conjuntos de este tamaño, no buscar tamaños mayores
+                if not found_any:
+                    break
+
+        return {
+            "success": True,
+            "cut_sets": cut_sets,
+            "num_cut_sets": len(cut_sets),
+            "bridges": len(bridges)
+        }
+
+    def find_fundamental_cycles(self, spanning_tree_edges: Optional[Set[str]] = None) -> Dict:
+        """
+        Encuentra todos los ciclos fundamentales del grafo.
+        Un ciclo fundamental es un ciclo que contiene exactamente una cuerda (arista no en el árbol).
+
+        Args:
+            spanning_tree_edges: Conjunto de nombres de aristas del árbol.
+                                Si es None, se calcula el MST automáticamente.
+
+        Returns:
+            Dict con los ciclos fundamentales encontrados
+        """
+        G = self._to_networkx()
+
+        if not nx.is_connected(G):
+            return {
+                "success": False,
+                "error": "El grafo no es conexo"
+            }
+
+        # Si no se proporciona árbol, calcular MST
+        if spanning_tree_edges is None:
+            mst_result = self.minimum_spanning_tree()
+            if not mst_result["success"]:
+                return mst_result
+            spanning_tree_edges = set(mst_result["edge_names"])
+
+        # Identificar cuerdas (aristas no en el árbol)
+        all_edges = set(self.edges.keys())
+        chords = all_edges - spanning_tree_edges
+
+        # Para cada cuerda, encontrar el ciclo fundamental
+        fundamental_cycles = []
+
+        for chord_name in chords:
+            v1_chord, v2_chord, _ = self.edges[chord_name]
+
+            # Crear grafo del árbol (solo ramas)
+            tree_graph = nx.Graph()
+            tree_graph.add_nodes_from(self.vertices)
+
+            for edge_name in spanning_tree_edges:
+                v1, v2, _ = self.edges[edge_name]
+                tree_graph.add_edge(v1, v2)
+
+            # Encontrar camino en el árbol entre los vértices de la cuerda
+            try:
+                path_in_tree = nx.shortest_path(tree_graph, v1_chord, v2_chord)
+            except nx.NetworkXNoPath:
+                continue
+
+            # El ciclo fundamental = camino en árbol + cuerda
+            cycle_edges = []
+
+            # Agregar aristas del camino
+            for i in range(len(path_in_tree) - 1):
+                u, v = path_in_tree[i], path_in_tree[i + 1]
+                # Encontrar el nombre de la arista
+                for edge_name in spanning_tree_edges:
+                    e_v1, e_v2, _ = self.edges[edge_name]
+                    if (e_v1 == u and e_v2 == v) or (e_v1 == v and e_v2 == u):
+                        cycle_edges.append(edge_name)
+                        break
+
+            # Agregar la cuerda
+            cycle_edges.append(chord_name)
+
+            # Obtener vértices del ciclo
+            cycle_vertices = set()
+            for edge_name in cycle_edges:
+                v1, v2, _ = self.edges[edge_name]
+                cycle_vertices.add(v1)
+                cycle_vertices.add(v2)
+
+            fundamental_cycles.append({
+                "edges": cycle_edges,
+                "vertices": sorted(list(cycle_vertices)),
+                "chord": chord_name,
+                "num_edges": len(cycle_edges)
+            })
+
+        return {
+            "success": True,
+            "fundamental_cycles": fundamental_cycles,
+            "num_cycles": len(fundamental_cycles),
+            "tree_edges": spanning_tree_edges
+        }
+
+    def find_fundamental_cut_sets(self, spanning_tree_edges: Optional[Set[str]] = None) -> Dict:
+        """
+        Encuentra los conjuntos de corte fundamentales del grafo.
+        Un conjunto de corte fundamental contiene exactamente una rama (arista del árbol).
+
+        Args:
+            spanning_tree_edges: Conjunto de nombres de aristas del árbol.
+                                Si es None, se calcula el MST automáticamente.
+
+        Returns:
+            Dict con los conjuntos de corte fundamentales encontrados
+        """
+        G = self._to_networkx()
+
+        if not nx.is_connected(G):
+            return {
+                "success": False,
+                "error": "El grafo no es conexo"
+            }
+
+        # Si no se proporciona árbol, calcular MST
+        if spanning_tree_edges is None:
+            mst_result = self.minimum_spanning_tree()
+            if not mst_result["success"]:
+                return mst_result
+            spanning_tree_edges = set(mst_result["edge_names"])
+
+        fundamental_cut_sets = []
+
+        # Para cada rama, encontrar el conjunto de corte fundamental
+        for branch_name in spanning_tree_edges:
+            v1_branch, v2_branch, _ = self.edges[branch_name]
+
+            # Crear grafo del árbol sin esta rama
+            tree_graph = nx.Graph()
+            tree_graph.add_nodes_from(self.vertices)
+
+            for edge_name in spanning_tree_edges:
+                if edge_name != branch_name:
+                    v1, v2, _ = self.edges[edge_name]
+                    tree_graph.add_edge(v1, v2)
+
+            # Encontrar componentes conexas del árbol sin esta rama
+            tree_components = list(nx.connected_components(tree_graph))
+
+            if len(tree_components) != 2:
+                continue
+
+            # Encontrar aristas del grafo original que cruzan entre las dos componentes
+            comp1, comp2 = tree_components[0], tree_components[1]
+            cut_edges = []
+
+            for edge_name, (u, v, _) in self.edges.items():
+                if (u in comp1 and v in comp2) or (u in comp2 and v in comp1):
+                    cut_edges.append(edge_name)
+
+            # Obtener vértices del conjunto de corte
+            cut_vertices = set()
+            for edge_name in cut_edges:
+                v1, v2, _ = self.edges[edge_name]
+                cut_vertices.add(v1)
+                cut_vertices.add(v2)
+
+            fundamental_cut_sets.append({
+                "edges": sorted(cut_edges),
+                "vertices": sorted(list(cut_vertices)),
+                "branch": branch_name,
+                "num_edges": len(cut_edges)
+            })
+
+        return {
+            "success": True,
+            "fundamental_cut_sets": fundamental_cut_sets,
+            "num_cut_sets": len(fundamental_cut_sets),
+            "tree_edges": spanning_tree_edges
+        }
+
     # ==================== ALGORITMO DE FLOYD-WARSHALL ====================
 
     def floyd_warshall(self) -> Dict:
@@ -470,6 +918,47 @@ class WeightedGraph:
             "radius": radius,
             "diameter": diameter,
             "reconstruct_path": reconstruct_path
+        }
+
+    # ==================== MEDIANA DEL GRAFO ====================
+
+    def find_median(self) -> Dict:
+        """
+        Encuentra la mediana del grafo
+        La mediana es el vértice (o vértices) que minimiza la suma de distancias
+        a todos los demás vértices
+
+        Returns:
+            Dict con vértices medianos y suma mínima de distancias
+        """
+        G = self._to_networkx()
+
+        if not nx.is_connected(G):
+            return {
+                "success": False,
+                "error": "El grafo no es conexo"
+            }
+
+        vertices_list = list(G.nodes())
+        distance_sums = {}
+
+        # Calcular suma de distancias para cada vértice
+        for v in vertices_list:
+            shortest_paths = nx.single_source_shortest_path_length(G, v)
+            distance_sums[v] = sum(shortest_paths.values())
+
+        # Encontrar mínimo
+        min_sum = min(distance_sums.values())
+
+        # Mediana: vértices con suma mínima
+        median_vertices = [v for v, s in distance_sums.items() if s == min_sum]
+
+        return {
+            "success": True,
+            "median_vertices": sorted(median_vertices),
+            "min_distance_sum": min_sum,
+            "distance_sums": distance_sums,
+            "num_medians": len(median_vertices)
         }
 
     # ==================== TABLA DE ANÁLISIS ====================
@@ -561,7 +1050,9 @@ class WeightedGraph:
             "edges": {
                 name: {"v1": v1, "v2": v2, "weight": weight}
                 for name, (v1, v2, weight) in self.edges.items()
-            }
+            },
+            "is_directed": self.is_directed,
+            "has_weights": self.has_weights
         }
 
     def to_json(self) -> str:
@@ -571,7 +1062,11 @@ class WeightedGraph:
     @classmethod
     def from_dict(cls, data: dict) -> WeightedGraph:
         """Crea un grafo desde un diccionario"""
-        graph = cls(vertices=set(data["vertices"]))
+        graph = cls(
+            vertices=set(data["vertices"]),
+            is_directed=data.get("is_directed", False),
+            has_weights=data.get("has_weights", True)
+        )
         for name, edge_data in data["edges"].items():
             graph.add_edge(name, edge_data["v1"], edge_data["v2"], edge_data["weight"])
         return graph

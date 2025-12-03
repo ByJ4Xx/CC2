@@ -46,6 +46,27 @@ class SpanningTreesContent(ctk.CTkFrame):
         controls = ctk.CTkScrollableFrame(self, corner_radius=10)
         controls.grid(row=0, column=0, sticky="nsew", padx=(0, 10), pady=0)
 
+        # ===== 0. OPCIONES DEL GRAFO =====
+        self.create_section(controls, "⚙️ 0. Opciones del Grafo")
+
+        # Checkbox para dirigido
+        self.is_directed_var = ctk.BooleanVar(value=False)
+        ctk.CTkCheckBox(
+            controls,
+            text="Grafo Dirigido",
+            variable=self.is_directed_var,
+            command=self.on_graph_option_changed
+        ).pack(fill="x", padx=10, pady=5)
+
+        # Checkbox para pesos
+        self.has_weights_var = ctk.BooleanVar(value=True)
+        ctk.CTkCheckBox(
+            controls,
+            text="Con Pesos",
+            variable=self.has_weights_var,
+            command=self.on_graph_option_changed
+        ).pack(fill="x", padx=10, pady=5)
+
         # ===== 1. SE LE DEBEN PEDIR AL USUARIO LOS DATOS DEL GRAFO =====
         self.create_section(controls, "🔨 1. Datos del Grafo")
 
@@ -97,6 +118,68 @@ class SpanningTreesContent(ctk.CTkFrame):
             hover_color="#2980b9"
         ).pack(fill="x", padx=10, pady=5)
 
+        # ===== 1.5 EDICIÓN DEL GRAFO =====
+        self.create_section(controls, "✏️ 1.5 Edición del Grafo")
+
+        ctk.CTkLabel(controls, text="Vértice a Eliminar:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
+        self.delete_vertex_var = ctk.StringVar(value="")
+        self.delete_vertex_combo = ctk.CTkComboBox(
+            controls,
+            variable=self.delete_vertex_var,
+            values=[]
+        )
+        self.delete_vertex_combo.pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="🗑️ Eliminar Vértice",
+            command=self.delete_vertex,
+            fg_color="#e74c3c",
+            hover_color="#c0392b"
+        ).pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkLabel(controls, text="Arista a Eliminar:", anchor="w").pack(fill="x", padx=10, pady=(10, 0))
+        self.delete_edge_var = ctk.StringVar(value="")
+        self.delete_edge_combo = ctk.CTkComboBox(
+            controls,
+            variable=self.delete_edge_var,
+            values=[]
+        )
+        self.delete_edge_combo.pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="🗑️ Eliminar Arista",
+            command=self.delete_edge,
+            fg_color="#e74c3c",
+            hover_color="#c0392b"
+        ).pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkLabel(controls, text="Arista a Modificar:", anchor="w").pack(fill="x", padx=10, pady=(10, 0))
+        self.edit_edge_var = ctk.StringVar(value="")
+        self.edit_edge_combo = ctk.CTkComboBox(
+            controls,
+            variable=self.edit_edge_var,
+            values=[]
+        )
+        self.edit_edge_combo.pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="📝 Modificar Arista",
+            command=self.edit_edge,
+            fg_color="#f39c12",
+            hover_color="#e67e22"
+        ).pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="ℹ️ Ver Información del Grafo",
+            command=self.show_graph_info,
+            fg_color="#9b59b6",
+            hover_color="#8e44ad"
+        ).pack(fill="x", padx=10, pady=5)
+
         # ===== 2. EN BASE A ESE GRAFO SE DEBE GENERAR EL ÁRBOL MÍNIMO Y EL COMPLEMENTO =====
         self.create_section(controls, "🌳 2. Árbol Mínimo y Complemento")
 
@@ -106,6 +189,14 @@ class SpanningTreesContent(ctk.CTkFrame):
             command=lambda: self.calculate_mst("kruskal"),
             fg_color="#9b59b6",
             hover_color="#8e44ad"
+        ).pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="📊 Ver 3 Grafos (Original, MST, Complemento)",
+            command=self.show_three_graphs,
+            fg_color="#2ecc71",
+            hover_color="#27ae60"
         ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkLabel(
@@ -162,6 +253,21 @@ class SpanningTreesContent(ctk.CTkFrame):
             text_color="#95a5a6"
         ).pack(fill="x", padx=10, pady=(0, 5))
 
+        ctk.CTkButton(
+            controls,
+            text="📍 Hallar Mediana",
+            command=self.find_and_show_median,
+            fg_color="#16a085",
+            hover_color="#138f7a"
+        ).pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkLabel(
+            controls,
+            text="Vértices con suma mínima de distancias",
+            font=("Segoe UI", 9, "italic"),
+            text_color="#95a5a6"
+        ).pack(fill="x", padx=10, pady=(0, 5))
+
         # ===== 6. MOSTRAR TABLA CON BOTONES =====
         self.create_section(controls, "📊 6. Tabla de Análisis")
 
@@ -182,6 +288,14 @@ class SpanningTreesContent(ctk.CTkFrame):
 
         # ===== UTILIDADES =====
         self.create_section(controls, "🔧 Utilidades")
+
+        ctk.CTkButton(
+            controls,
+            text="📥 Cargar desde Matrices",
+            command=self.load_from_matrices,
+            fg_color="#3498db",
+            hover_color="#2980b9"
+        ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
             controls,
@@ -272,6 +386,7 @@ class SpanningTreesContent(ctk.CTkFrame):
         vertices_list = sorted(list(self.graph.vertices))
         self.edge_v1_combo.configure(values=vertices_list)
         self.edge_v2_combo.configure(values=vertices_list)
+        self.update_edit_dropdowns()
 
         self.draw_graph()
         self.show_status(f"✓ Vértice '{vertex}' agregado")
@@ -308,10 +423,146 @@ class SpanningTreesContent(ctk.CTkFrame):
         self.draw_graph()
         self.show_status(f"✓ Arista '{edge_name}' agregada")
 
+    # ==================== OPCIONES DEL GRAFO ====================
+
+    def on_graph_option_changed(self):
+        """Actualiza las opciones del grafo cuando se cambian los checkboxes"""
+        self.graph.is_directed = self.is_directed_var.get()
+        self.graph.has_weights = self.has_weights_var.get()
+
+    # ==================== EDICIÓN ====================
+
+    def update_edit_dropdowns(self):
+        """Actualiza las listas desplegables de edición"""
+        vertices_list = sorted(list(self.graph.vertices))
+        self.delete_vertex_combo.configure(values=vertices_list)
+
+        edges_list = sorted(list(self.graph.edges.keys()))
+        self.delete_edge_combo.configure(values=edges_list)
+        self.edit_edge_combo.configure(values=edges_list)
+
+    def delete_vertex(self):
+        """Elimina un vértice"""
+        vertex = self.delete_vertex_var.get().strip()
+        if not vertex:
+            messagebox.showwarning("Advertencia", "Selecciona un vértice para eliminar")
+            return
+
+        if vertex not in self.graph.vertices:
+            messagebox.showwarning("Advertencia", f"El vértice '{vertex}' no existe")
+            return
+
+        if messagebox.askyesno("Confirmar", f"¿Eliminar vértice '{vertex}' y sus aristas?"):
+            self.graph.remove_vertex(vertex)
+            self.delete_vertex_var.set("")
+            self.update_edit_dropdowns()
+            self.edge_v1_combo.configure(values=sorted(list(self.graph.vertices)))
+            self.edge_v2_combo.configure(values=sorted(list(self.graph.vertices)))
+            self.draw_graph()
+            self.show_status(f"✓ Vértice '{vertex}' eliminado")
+
+    def delete_edge(self):
+        """Elimina una arista"""
+        edge_name = self.delete_edge_var.get().strip()
+        if not edge_name:
+            messagebox.showwarning("Advertencia", "Selecciona una arista para eliminar")
+            return
+
+        if edge_name not in self.graph.edges:
+            messagebox.showwarning("Advertencia", f"La arista '{edge_name}' no existe")
+            return
+
+        if messagebox.askyesno("Confirmar", f"¿Eliminar arista '{edge_name}'?"):
+            self.graph.remove_edge(edge_name)
+            self.delete_edge_var.set("")
+            self.update_edit_dropdowns()
+            self.draw_graph()
+            self.show_status(f"✓ Arista '{edge_name}' eliminada")
+
+    def edit_edge(self):
+        """Modifica el peso de una arista"""
+        edge_name = self.edit_edge_var.get().strip()
+        if not edge_name:
+            messagebox.showwarning("Advertencia", "Selecciona una arista para modificar")
+            return
+
+        if edge_name not in self.graph.edges:
+            messagebox.showwarning("Advertencia", f"La arista '{edge_name}' no existe")
+            return
+
+        # Crear ventana de diálogo
+        edit_window = ctk.CTkToplevel(self)
+        edit_window.title(f"Modificar Arista {edge_name}")
+        edit_window.geometry("300x150")
+        edit_window.resizable(False, False)
+
+        v1, v2, current_weight = self.graph.edges[edge_name]
+
+        ctk.CTkLabel(edit_window, text=f"Arista: {edge_name}").pack(pady=10, padx=10)
+        ctk.CTkLabel(edit_window, text=f"Vértices: {v1} - {v2}").pack(pady=(0, 10), padx=10)
+
+        ctk.CTkLabel(edit_window, text="Nuevo peso:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
+        weight_entry = ctk.CTkEntry(edit_window, placeholder_text=f"Actual: {current_weight}")
+        weight_entry.pack(fill="x", padx=10, pady=5)
+
+        def apply_changes():
+            try:
+                new_weight = float(weight_entry.get())
+                self.graph.edit_edge(edge_name, new_weight)
+                self.edit_edge_var.set("")
+                self.draw_graph()
+                self.show_status(f"✓ Arista '{edge_name}' modificada")
+                edit_window.destroy()
+            except ValueError:
+                messagebox.showerror("Error", "El peso debe ser un número")
+
+        ctk.CTkButton(
+            edit_window,
+            text="Aplicar",
+            command=apply_changes,
+            fg_color="#2ecc71",
+            hover_color="#27ae60"
+        ).pack(fill="x", padx=10, pady=10)
+
+    def show_graph_info(self):
+        """Muestra información detallada del grafo"""
+        if len(self.graph.vertices) == 0:
+            messagebox.showinfo("Información", "El grafo está vacío")
+            return
+
+        info = self.graph.get_graph_info()
+
+        output = "INFORMACIÓN DEL GRAFO\n"
+        output += "=" * 50 + "\n\n"
+
+        output += f"Vértices: {info['num_vertices']}\n"
+        output += f"Aristas: {info['num_edges']}\n"
+        output += f"Dirigido: {'Sí' if info['is_directed'] else 'No'}\n"
+        output += f"Con Pesos: {'Sí' if info['has_weights'] else 'No'}\n"
+        output += f"Conexo: {'Sí' if info['is_connected'] else 'No'}\n"
+        output += f"Peso Total: {info['total_weight']:.2f}\n\n"
+
+        output += "VÉRTICES:\n"
+        output += ", ".join(info['vertices']) + "\n\n"
+
+        output += "ARISTAS:\n"
+        for edge in info['edges']:
+            output += f"  {edge['name']}: {edge['v1']} - {edge['v2']}"
+            if info['has_weights']:
+                output += f" (peso: {edge['weight']:.2f})"
+            output += "\n"
+
+        output += "\nGRADO DE CADA VÉRTICE:\n"
+        for vertex, degree in sorted(info['degrees'].items()):
+            output += f"  {vertex}: {degree}\n"
+
+        self.show_results(output)
+        self.notebook.set("Resultados")
+
     # ==================== ÁRBOLES GENERADORES ====================
 
     def calculate_mst(self, algorithm: str):
-        """Calcula el árbol generador mínimo"""
+        """Calcula el árbol generador mínimo y muestra el complemento"""
         if len(self.graph.vertices) == 0:
             messagebox.showwarning("Advertencia", "El grafo está vacío")
             return
@@ -325,109 +576,192 @@ class SpanningTreesContent(ctk.CTkFrame):
         # Guardar árbol actual
         self.current_tree = set(result["edge_names"])
 
+        # Calcular complemento
+        complement = self.graph.get_complement_graph()
+        complement_edges = set(complement.edges.keys())
+
         output = f"ÁRBOL GENERADOR MÍNIMO ({algorithm.upper()})\n\n"
-        output += f"Peso total: {result['total_weight']:.2f}\n"
-        output += f"Número de aristas: {result['num_edges']}\n\n"
+        output += f"Peso total del árbol: {result['total_weight']:.2f}\n"
+        output += f"Número de aristas del árbol: {result['num_edges']}\n\n"
         output += "Aristas del árbol:\n"
 
         for edge in result["tree_edges"]:
             v1, v2 = edge["vertices"]
             output += f"  {edge['name']}: {v1} - {v2} (peso: {edge['weight']:.2f})\n"
 
+        output += f"\n\nCOMPLEMENTO DEL GRAFO\n"
+        output += f"Número de aristas del complemento: {len(complement_edges)}\n\n"
+        output += "Aristas del complemento:\n"
+
+        if complement_edges:
+            for edge_name in sorted(complement_edges):
+                v1, v2, weight = complement.edges[edge_name]
+                output += f"  {edge_name}: {v1} - {v2}\n"
+        else:
+            output += "  (El complemento está vacío - el grafo original es completo)\n"
+
+        output += f"\n\nFÓRMULA: Árbol + Complemento = Grafo Original\n"
+        output += f"{result['num_edges']} + {len(complement_edges)} = {len(self.graph.edges)}\n"
+
         self.show_results(output)
         self.draw_graph(highlight_edges=self.current_tree)
         self.notebook.set("Resultados")
 
-    def calculate_maximum_tree(self):
-        """Calcula el árbol generador máximo"""
+    def show_three_graphs(self):
+        """Muestra 3 grafos en una ventana: Original, MST, Complemento"""
         if len(self.graph.vertices) == 0:
             messagebox.showwarning("Advertencia", "El grafo está vacío")
             return
 
-        result = self.graph.maximum_spanning_tree()
-
-        if not result["success"]:
-            messagebox.showerror("Error", result["error"])
+        if not self.graph.is_connected():
+            messagebox.showerror("Error", "El grafo debe ser conexo")
             return
 
-        # Guardar árbol actual
-        self.current_tree = set(result["edge_names"])
+        # Calcular MST
+        mst_result = self.graph.minimum_spanning_tree()
+        if not mst_result["success"]:
+            messagebox.showerror("Error", mst_result["error"])
+            return
 
-        output = "ÁRBOL GENERADOR MÁXIMO\n\n"
-        output += f"Peso total: {result['total_weight']:.2f}\n"
-        output += f"Número de aristas: {result['num_edges']}\n\n"
-        output += "Aristas del árbol:\n"
+        # Obtener el complemento
+        complement = self.graph.get_complement_graph()
 
-        for edge in result["tree_edges"]:
-            v1, v2 = edge["vertices"]
-            output += f"  {edge['name']}: {v1} - {v2} (peso: {edge['weight']:.2f})\n"
+        # Crear ventana
+        window = ctk.CTkToplevel(self)
+        window.title("Visualización de Grafos: Original, MST, Complemento")
+        window.geometry("1400x600")
 
-        self.show_results(output)
-        self.draw_graph(highlight_edges=self.current_tree)
-        self.notebook.set("Resultados")
+        # Frame principal
+        main_frame = ctk.CTkFrame(window)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        main_frame.grid_columnconfigure(0, weight=1)
+        main_frame.grid_columnconfigure(1, weight=1)
+        main_frame.grid_columnconfigure(2, weight=1)
+        main_frame.grid_rowconfigure(0, weight=1)
+
+        # Función auxiliar para crear cada subfigura
+        def create_graph_display(parent, title, graph_obj, highlight_edges=None):
+            frame = ctk.CTkFrame(parent, fg_color="#f0f0f0")
+            frame.pack(fill="both", expand=True, side="left", padx=5, pady=5)
+
+            # Título
+            ctk.CTkLabel(
+                frame,
+                text=title,
+                font=("Segoe UI", 12, "bold"),
+                text_color="#000000"
+            ).pack(pady=10)
+
+            # Información
+            info_text = f"Vértices: {len(graph_obj.vertices)}\nAristas: {len(graph_obj.edges)}"
+            ctk.CTkLabel(
+                frame,
+                text=info_text,
+                font=("Segoe UI", 10),
+                text_color="#333333"
+            ).pack(pady=5)
+
+            # Canvas de matplotlib
+            fig, ax = plt.subplots(figsize=(4.5, 5), facecolor='#f0f0f0')
+            ax.set_facecolor('#f0f0f0')
+
+            if len(graph_obj.vertices) > 0:
+                G = nx.Graph()
+                G.add_nodes_from(graph_obj.vertices)
+
+                edge_labels = {}
+                for edge_name, (v1, v2, weight) in graph_obj.edges.items():
+                    G.add_edge(v1, v2, name=edge_name, weight=weight)
+                    edge_labels[(v1, v2)] = f"{edge_name}"
+
+                pos = nx.circular_layout(G)
+
+                # Dibujar nodos
+                nx.draw_networkx_nodes(
+                    G, pos, ax=ax,
+                    node_color='#3498db',
+                    node_size=600,
+                    alpha=0.9
+                )
+
+                # Dibujar aristas
+                if highlight_edges:
+                    normal_edges = [(u, v) for u, v, d in G.edges(data=True) if d.get('name') not in highlight_edges]
+                    highlight_edges_list = [(u, v) for u, v, d in G.edges(data=True) if d.get('name') in highlight_edges]
+
+                    if normal_edges:
+                        nx.draw_networkx_edges(G, pos, ax=ax, edgelist=normal_edges, edge_color='#95a5a6', width=1.5, alpha=0.3)
+                    if highlight_edges_list:
+                        nx.draw_networkx_edges(G, pos, ax=ax, edgelist=highlight_edges_list, edge_color='#2ecc71', width=2.5, alpha=0.9)
+                else:
+                    nx.draw_networkx_edges(G, pos, ax=ax, edge_color='#95a5a6', width=2, alpha=0.6)
+
+                # Dibujar etiquetas
+                nx.draw_networkx_labels(G, pos, ax=ax, font_size=10, font_weight='bold', font_color='white')
+
+                ax.axis('off')
+
+            canvas = FigureCanvasTkAgg(fig, frame)
+            canvas.get_tk_widget().pack(fill="both", expand=True, padx=5, pady=5)
+
+        # Crear 3 subfiguras
+        create_graph_display(main_frame, "Grafo Original", self.graph)
+        create_graph_display(main_frame, "Árbol Mínimo (MST)", self.graph, highlight_edges=set(mst_result["edge_names"]))
+        create_graph_display(main_frame, "Complemento", complement)
 
     # ==================== CENTRO Y CENTROIDE ====================
 
     def calculate_center(self):
-        """Calcula el centro del grafo"""
+        """Calcula el centro del árbol mínimo"""
         if len(self.graph.vertices) == 0:
             messagebox.showwarning("Advertencia", "El grafo está vacío")
             return
 
-        result = self.graph.graph_center()
+        if not self.graph.is_connected():
+            messagebox.showerror("Error", "El grafo debe ser conexo para calcular el centro")
+            return
+
+        # Usar el árbol actual o calcular el MST
+        tree_edges = self.current_tree if self.current_tree else None
+
+        result = self.graph.find_tree_center(tree_edges)
 
         if not result["success"]:
-            messagebox.showerror("Error", result["error"])
+            messagebox.showerror("Error", result.get("error", "Error desconocido"))
             return
 
-        output = "CENTRO DEL GRAFO\n\n"
+        output = "CENTRO DEL ÁRBOL DE EXPANSIÓN MÍNIMO\n"
+        output += "=" * 50 + "\n\n"
 
-        if result["num_centers"] == 1:
-            output += f"Centro: {result['center_vertices'][0]}\n\n"
+        center_vertices = result["center_vertices"]
+
+        if result["is_center"]:
+            output += f"✓ CENTRO: {center_vertices[0]}\n\n"
+            output += "Tipo: CENTRO (1 vértice central)\n"
+            output += "El grafo tiene un único vértice central\n\n"
+        elif result["is_bicentro"]:
+            output += f"✓ BICENTRO: {', '.join(center_vertices)}\n\n"
+            output += "Tipo: BICENTRO (2 vértices centrales)\n"
+            if result["is_connected_bicentro"]:
+                output += f"Los vértices centrales están conectados por una arista\n\n"
+            else:
+                output += f"Los vértices centrales NO están conectados directamente\n\n"
         else:
-            output += f"Centros: {', '.join(result['center_vertices'])}\n\n"
+            output += f"Centro: {', '.join(center_vertices)}\n\n"
 
-        output += f"Radio: {result['radius']}\n"
-        output += f"Diámetro: {result['diameter']}\n\n"
-        output += "Excentricidades:\n"
+        output += f"Número de vértices en el centro: {result['num_centers']}\n\n"
 
-        for vertex, ecc in result["eccentricity"].items():
-            marker = " ⭐" if vertex in result["center_vertices"] else ""
-            output += f"  {vertex}: {ecc}{marker}\n"
+        output += "Algoritmo: Eliminación iterativa de hojas (grado 1)\n"
+        output += "1. Se comienza con el árbol mínimo\n"
+        output += "2. Se eliminan todos los vértices con grado 1 (hojas)\n"
+        output += "3. Se repite hasta que queden 1 o 2 vértices\n"
 
         self.show_results(output)
-        self.draw_graph(highlight_vertices=set(result["center_vertices"]))
         self.notebook.set("Resultados")
 
-    def calculate_centroid(self):
-        """Calcula el centroide del grafo"""
-        if len(self.graph.vertices) == 0:
-            messagebox.showwarning("Advertencia", "El grafo está vacío")
-            return
-
-        result = self.graph.graph_centroid()
-
-        if not result["success"]:
-            messagebox.showerror("Error", result["error"])
-            return
-
-        output = "CENTROIDE DEL GRAFO\n\n"
-
-        if result["num_centroids"] == 1:
-            output += f"Centroide: {result['centroid_vertices'][0]}\n\n"
-        else:
-            output += f"Centroides: {', '.join(result['centroid_vertices'])}\n\n"
-
-        output += f"Suma mínima de distancias: {result['min_distance_sum']}\n\n"
-        output += "Suma de distancias por vértice:\n"
-
-        for vertex, dist_sum in result["distance_sums"].items():
-            marker = " ⭐" if vertex in result["centroid_vertices"] else ""
-            output += f"  {vertex}: {dist_sum}{marker}\n"
-
-        self.show_results(output)
-        self.draw_graph(highlight_vertices=set(result["centroid_vertices"]))
-        self.notebook.set("Resultados")
+        # Resaltar vértices del centro
+        self.draw_graph(highlight_vertices=set(center_vertices))
 
     # ==================== RAMAS Y CUERDAS ====================
 
@@ -474,7 +808,12 @@ class SpanningTreesContent(ctk.CTkFrame):
 
         # Actualizar árbol actual y visualizar
         self.current_tree = result["tree_edges"]
-        self.draw_graph(highlight_edges=self.current_tree)
+
+        # Preparar conjuntos de nombres de aristas para visualización
+        branch_names = set(branch["name"] for branch in result["branches"])
+        chord_names = set(chord["name"] for chord in result["chords"])
+
+        self.draw_graph(branches=branch_names, chords=chord_names)
         self.notebook.set("Resultados")
 
     # ==================== ALGORITMO DE FLOYD-WARSHALL ====================
@@ -527,6 +866,60 @@ class SpanningTreesContent(ctk.CTkFrame):
         self.show_results(output)
         self.notebook.set("Resultados")
 
+    def find_and_show_median(self):
+        """Encuentra la mediana del grafo y muestra información"""
+        if len(self.graph.vertices) == 0:
+            messagebox.showwarning("Advertencia", "El grafo está vacío")
+            return
+
+        if not self.graph.is_connected():
+            messagebox.showerror("Error", "El grafo debe ser conexo")
+            return
+
+        result = self.graph.find_median()
+
+        if not result["success"]:
+            messagebox.showerror("Error", result["error"])
+            return
+
+        output = "MEDIANA DEL GRAFO\n"
+        output += "=" * 50 + "\n\n"
+
+        median_vertices = result["median_vertices"]
+        if result["num_medians"] == 1:
+            output += f"✓ Mediana: {median_vertices[0]}\n\n"
+        else:
+            output += f"✓ Medianas: {', '.join(median_vertices)}\n\n"
+
+        output += f"Suma mínima de distancias: {result['min_distance_sum']:.2f}\n\n"
+
+        output += "Suma de distancias por vértice:\n"
+        for vertex in sorted(result["distance_sums"].keys()):
+            dist_sum = result["distance_sums"][vertex]
+            marker = " ⭐ MEDIANA" if vertex in median_vertices else ""
+            output += f"  {vertex}: {dist_sum:.2f}{marker}\n"
+
+        # Crear subgrafo de la mediana
+        try:
+            median_subgraph = self.graph.get_subgraph(set(median_vertices))
+            output += f"\n\nSubgrafo de la mediana:\n"
+            output += f"Vértices: {', '.join(sorted(list(median_subgraph.vertices)))}\n"
+            output += f"Aristas: {len(median_subgraph.edges)}\n"
+            if median_subgraph.edges:
+                for edge_name, (v1, v2, weight) in sorted(median_subgraph.edges.items()):
+                    output += f"  {edge_name}: {v1} - {v2}"
+                    if self.graph.has_weights:
+                        output += f" (peso: {weight:.2f})"
+                    output += "\n"
+        except:
+            pass
+
+        self.show_results(output)
+        self.notebook.set("Resultados")
+
+        # Resaltar vértices de la mediana
+        self.draw_graph(highlight_vertices=set(median_vertices))
+
     def show_analysis_table(self):
         """Muestra tabla interactiva de análisis completo"""
         if len(self.graph.vertices) == 0:
@@ -546,92 +939,164 @@ class SpanningTreesContent(ctk.CTkFrame):
         # Crear ventana de tabla
         table_window = ctk.CTkToplevel(self)
         table_window.title("Tabla de Análisis del Grafo")
-        table_window.geometry("900x600")
+        table_window.geometry("1000x700")
 
         # Frame principal con scroll
-        main_frame = ctk.CTkScrollableFrame(table_window)
-        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        main_frame = ctk.CTkScrollableFrame(table_window, fg_color="transparent")
+        main_frame.pack(fill="both", expand=True, padx=0, pady=0)
 
         # Título
-        title_label = ctk.CTkLabel(
-            main_frame,
-            text="TABLA DE ANÁLISIS COMPLETO",
-            font=("Segoe UI", 18, "bold")
-        )
-        title_label.pack(pady=10)
-
-        # Información general
-        info_frame = ctk.CTkFrame(main_frame, corner_radius=10)
-        info_frame.pack(fill="x", pady=10, padx=10)
-
-        general_info = f"""Radio: {result['radius']:.2f}    |    Diámetro: {result['diameter']:.2f}
-Centro: {', '.join(result['center_vertices'])}    |    Centroide: {', '.join(result['centroid_vertices'])}"""
+        title_frame = ctk.CTkFrame(main_frame, fg_color="#1a1a1a", corner_radius=0)
+        title_frame.pack(fill="x", padx=0, pady=0)
 
         ctk.CTkLabel(
-            info_frame,
-            text=general_info,
-            font=("Segoe UI", 12)
-        ).pack(pady=10, padx=10)
+            title_frame,
+            text="📊 ANÁLISIS COMPLETO DEL GRAFO",
+            font=("Segoe UI", 18, "bold")
+        ).pack(pady=15, padx=20)
+
+        # Información general en tabla formateada
+        info_frame = ctk.CTkFrame(main_frame, fg_color="#2b2b2b", corner_radius=10)
+        info_frame.pack(fill="x", pady=10, padx=15)
+
+        info_frame.grid_columnconfigure(0, weight=1)
+        info_frame.grid_columnconfigure(1, weight=1)
+        info_frame.grid_columnconfigure(2, weight=1)
+        info_frame.grid_columnconfigure(3, weight=1)
+
+        # Encabezados y datos
+        stats = [
+            ("Radio ⭐", f"{result['radius']:.2f}"),
+            ("Diámetro 📏", f"{result['diameter']:.2f}"),
+            ("Centro", ', '.join(result['center_vertices'])),
+            ("Centroide", ', '.join(result['centroid_vertices']))
+        ]
+
+        for idx, (label, value) in enumerate(stats):
+            col = idx % 4
+            row = idx // 4
+
+            ctk.CTkLabel(
+                info_frame,
+                text=label + ":",
+                font=("Segoe UI", 11, "bold"),
+                text_color="#95a5a6"
+            ).grid(row=row*2, column=col, padx=15, pady=(10, 2), sticky="w")
+
+            ctk.CTkLabel(
+                info_frame,
+                text=value,
+                font=("Segoe UI", 12, "bold"),
+                text_color="#ecf0f1"
+            ).grid(row=row*2+1, column=col, padx=15, pady=(2, 10), sticky="w")
+
+        # Separador
+        separator = ctk.CTkFrame(main_frame, fg_color="#3a3a3a", height=1)
+        separator.pack(fill="x", pady=15, padx=15)
+
+        # Tabla de vértices con encabezado
+        table_header_frame = ctk.CTkFrame(main_frame, fg_color="#1f1f1f", corner_radius=8)
+        table_header_frame.pack(fill="x", pady=(10, 0), padx=15)
+
+        table_header_frame.grid_columnconfigure(0, weight=1, minsize=80)
+        table_header_frame.grid_columnconfigure(1, weight=1, minsize=100)
+        table_header_frame.grid_columnconfigure(2, weight=1, minsize=120)
+        table_header_frame.grid_columnconfigure(3, weight=2, minsize=200)
+        table_header_frame.grid_columnconfigure(4, weight=1, minsize=150)
+
+        headers = ["Vértice", "Excentricidad", "Suma Dist.", "Tipo", "Acciones"]
+        for col, header in enumerate(headers):
+            ctk.CTkLabel(
+                table_header_frame,
+                text=header,
+                font=("Segoe UI", 11, "bold"),
+                text_color="#ecf0f1",
+                fg_color="#2b2b2b",
+                corner_radius=0
+            ).grid(row=0, column=col, padx=10, pady=12, sticky="ew")
 
         # Tabla de vértices
         vertices = result["vertices"]
         vertex_analysis = result["vertex_analysis"]
 
-        for vertex in vertices:
+        for idx, vertex in enumerate(vertices):
             data = vertex_analysis[vertex]
 
-            # Frame para cada vértice
-            vertex_frame = ctk.CTkFrame(main_frame, corner_radius=10)
-            vertex_frame.pack(fill="x", pady=5, padx=10)
+            # Alternar colores de fondo
+            bg_color = "#2b2b2b" if idx % 2 == 0 else "#252525"
 
-            # Color especial si es centro o centroide
+            row_frame = ctk.CTkFrame(main_frame, fg_color=bg_color, corner_radius=0)
+            row_frame.pack(fill="x", padx=15, pady=1)
+
+            row_frame.grid_columnconfigure(0, weight=1, minsize=80)
+            row_frame.grid_columnconfigure(1, weight=1, minsize=100)
+            row_frame.grid_columnconfigure(2, weight=1, minsize=120)
+            row_frame.grid_columnconfigure(3, weight=2, minsize=200)
+            row_frame.grid_columnconfigure(4, weight=1, minsize=150)
+
+            # Vértice
+            vertex_label = vertex
             if data["is_center"] or data["is_centroid"]:
-                vertex_frame.configure(fg_color="#e67e22")
-
-            # Header del vértice
-            header_frame = ctk.CTkFrame(vertex_frame, fg_color="transparent")
-            header_frame.pack(fill="x", padx=10, pady=5)
-
-            # Nombre y etiquetas
-            labels = []
-            if data["is_center"]:
-                labels.append("CENTRO")
-            if data["is_centroid"]:
-                labels.append("CENTROIDE")
-            label_str = f" ({', '.join(labels)})" if labels else ""
+                markers = []
+                if data["is_center"]:
+                    markers.append("★ CENTRO")
+                if data["is_centroid"]:
+                    markers.append("◆ CENTROIDE")
+                vertex_label = f"{vertex} ({', '.join(markers)})"
 
             ctk.CTkLabel(
-                header_frame,
-                text=f"Vértice {vertex}{label_str}",
-                font=("Segoe UI", 14, "bold")
-            ).pack(side="left", padx=5)
+                row_frame,
+                text=vertex_label,
+                font=("Segoe UI", 11, "bold" if data["is_center"] or data["is_centroid"] else "normal"),
+                text_color="#e67e22" if data["is_center"] or data["is_centroid"] else "#ecf0f1"
+            ).grid(row=0, column=0, padx=10, pady=12, sticky="w")
+
+            # Excentricidad
+            ctk.CTkLabel(
+                row_frame,
+                text=f"{data['eccentricity']:.2f}",
+                font=("Segoe UI", 11)
+            ).grid(row=0, column=1, padx=10, pady=12, sticky="w")
+
+            # Suma de distancias
+            ctk.CTkLabel(
+                row_frame,
+                text=f"{data['sum_distances']:.2f}",
+                font=("Segoe UI", 11)
+            ).grid(row=0, column=2, padx=10, pady=12, sticky="w")
+
+            # Tipo
+            tipo_text = ""
+            if data["is_center"] and data["is_centroid"]:
+                tipo_text = "Centro y Centroide"
+            elif data["is_center"]:
+                tipo_text = "Centro"
+            elif data["is_centroid"]:
+                tipo_text = "Centroide"
+            else:
+                tipo_text = "Regular"
 
             ctk.CTkLabel(
-                header_frame,
-                text=f"Excentricidad: {data['eccentricity']:.2f}",
-                font=("Segoe UI", 12)
-            ).pack(side="left", padx=20)
+                row_frame,
+                text=tipo_text,
+                font=("Segoe UI", 11)
+            ).grid(row=0, column=3, padx=10, pady=12, sticky="w")
 
-            ctk.CTkLabel(
-                header_frame,
-                text=f"Suma distancias: {data['sum_distances']:.2f}",
-                font=("Segoe UI", 12)
-            ).pack(side="left", padx=20)
-
-            # Botones de acción
-            button_frame = ctk.CTkFrame(vertex_frame, fg_color="transparent")
-            button_frame.pack(fill="x", padx=10, pady=5)
+            # Acciones (botones)
+            action_frame = ctk.CTkFrame(row_frame, fg_color="transparent")
+            action_frame.grid(row=0, column=4, padx=10, pady=12, sticky="w")
 
             # Botón para mostrar distancias
             def show_distances(v=vertex, dists=data['distances']):
                 dist_text = f"DISTANCIAS DESDE {v}:\n\n"
-                for other_v, dist in sorted(dists.items()):
+                for other_v in sorted(dists.keys()):
+                    dist = dists[other_v]
                     if dist == 0:
-                        dist_text += f"{other_v}: 0 (mismo vértice)\n"
+                        dist_text += f"  {other_v}: 0\n"
                     elif dist == float('inf'):
-                        dist_text += f"{other_v}: ∞ (no alcanzable)\n"
+                        dist_text += f"  {other_v}: ∞\n"
                     else:
-                        dist_text += f"{other_v}: {dist:.2f}\n"
+                        dist_text += f"  {other_v}: {dist:.2f}\n"
 
                 # Mostrar en ventana emergente
                 dist_window = ctk.CTkToplevel(table_window)
@@ -644,13 +1109,15 @@ Centro: {', '.join(result['center_vertices'])}    |    Centroide: {', '.join(res
                 text_box.configure(state="disabled")
 
             ctk.CTkButton(
-                button_frame,
-                text="Ver Distancias",
+                action_frame,
+                text="Distancias",
                 command=show_distances,
-                width=120,
+                width=90,
+                height=28,
+                font=("Segoe UI", 9),
                 fg_color="#3498db",
                 hover_color="#2980b9"
-            ).pack(side="left", padx=5)
+            ).pack(side="left", padx=2)
 
             # Botón para resaltar en grafo
             def highlight_vertex(v=vertex):
@@ -658,89 +1125,17 @@ Centro: {', '.join(result['center_vertices'])}    |    Centroide: {', '.join(res
                 table_window.lift()
 
             ctk.CTkButton(
-                button_frame,
-                text="Resaltar en Grafo",
+                action_frame,
+                text="Resaltar",
                 command=highlight_vertex,
-                width=120,
+                width=80,
+                height=28,
+                font=("Segoe UI", 9),
                 fg_color="#2ecc71",
                 hover_color="#27ae60"
-            ).pack(side="left", padx=5)
+            ).pack(side="left", padx=2)
 
-            # Mostrar preview de distancias
-            preview_text = "Distancias: "
-            preview_dists = []
-            for other_v, dist in sorted(data['distances'].items())[:5]:
-                if dist != 0 and dist != float('inf'):
-                    preview_dists.append(f"{other_v}={dist:.1f}")
-
-            if preview_dists:
-                preview_text += ", ".join(preview_dists)
-                if len(data['distances']) > 5:
-                    preview_text += "..."
-
-            ctk.CTkLabel(
-                vertex_frame,
-                text=preview_text,
-                font=("Segoe UI", 10),
-                text_color="#95a5a6"
-            ).pack(fill="x", padx=10, pady=(0, 5))
-
-    # ==================== DISTANCIAS ENTRE ÁRBOLES ====================
-
-    def calculate_tree_distances(self):
-        """Calcula distancias entre todos los árboles de expansión"""
-        if len(self.graph.vertices) == 0:
-            messagebox.showwarning("Advertencia", "El grafo está vacío")
-            return
-
-        if not self.graph.is_connected():
-            messagebox.showerror("Error", "El grafo debe ser conexo")
-            return
-
-        # Advertencia
-        if len(self.graph.edges) > 12:
-            if not messagebox.askyesno(
-                "Advertencia",
-                "El grafo tiene muchas aristas.\n"
-                "Generar todos los árboles puede ser muy lento.\n"
-                "¿Continuar?"
-            ):
-                return
-
-        self.show_status("Calculando árboles... (puede tardar)")
-        self.update()
-
-        result = self.graph.all_tree_distances()
-
-        if not result["success"]:
-            messagebox.showerror("Error", result["error"])
-            self.show_status("Error en cálculo")
-            return
-
-        output = "DISTANCIAS ENTRE ÁRBOLES DE EXPANSIÓN\n\n"
-        output += f"Árboles de expansión encontrados: {result['num_trees']}\n"
-        output += f"Pares de árboles: {result['num_pairs']}\n"
-        output += f"Distancia mínima: {result['min_distance']}\n"
-        output += f"Distancia máxima: {result['max_distance']}\n\n"
-
-        if result["num_pairs"] <= 50:
-            output += "Distancias entre pares:\n"
-            for dist_info in result["distances"]:
-                output += f"\nÁrbol {dist_info['tree1_id']} ↔ Árbol {dist_info['tree2_id']}: "
-                output += f"distancia = {dist_info['distance']}\n"
-                output += f"  Árbol {dist_info['tree1_id']}: {{{', '.join(dist_info['tree1_edges'])}}}\n"
-                output += f"  Árbol {dist_info['tree2_id']}: {{{', '.join(dist_info['tree2_edges'])}}}\n"
-        else:
-            output += "\n(Mostrando primeros 50 pares)\n"
-            for dist_info in result["distances"][:50]:
-                output += f"Árbol {dist_info['tree1_id']} ↔ Árbol {dist_info['tree2_id']}: "
-                output += f"{dist_info['distance']}\n"
-
-        self.show_results(output)
-        self.notebook.set("Resultados")
-        self.show_status(f"✓ {result['num_trees']} árboles encontrados")
-
-    # ==================== INFO Y UTILIDADES ====================
+    # ==================== PERSISTENCIA ====================
 
     def show_graph_info(self):
         """Muestra información del grafo"""
@@ -768,8 +1163,15 @@ Centro: {', '.join(result['center_vertices'])}    |    Centroide: {', '.join(res
 
     # ==================== VISUALIZACIÓN ====================
 
-    def draw_graph(self, highlight_edges=None, highlight_vertices=None):
-        """Dibuja el grafo ponderado con posición fija"""
+    def draw_graph(self, highlight_edges=None, highlight_vertices=None, branches=None, chords=None):
+        """Dibuja el grafo ponderado con posición fija
+
+        Args:
+            highlight_edges: conjunto de nombres de aristas a destacar (color verde)
+            highlight_vertices: conjunto de vértices a destacar (color rojo)
+            branches: conjunto de nombres de aristas que son ramas (color azul)
+            chords: conjunto de nombres de aristas que son cuerdas (color naranja)
+        """
         self.ax.clear()
 
         if len(self.graph.vertices) == 0:
@@ -798,28 +1200,15 @@ Centro: {', '.join(result['center_vertices'])}    |    Centroide: {', '.join(res
         current_vertices = set(self.graph.vertices)
 
         if self.graph_pos is None:
-            # Primera vez o después de limpiar
-            self.graph_pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
+            # Primera vez o después de limpiar - usar layout circular para simetría
+            self.graph_pos = nx.circular_layout(G)
         else:
             # Verificar si hay vértices nuevos o eliminados
             stored_vertices = set(self.graph_pos.keys())
 
             if current_vertices != stored_vertices:
-                # Hay cambios en vértices
-                new_vertices = current_vertices - stored_vertices
-                removed_vertices = stored_vertices - current_vertices
-
-                if new_vertices:
-                    # Calcular posición solo para nuevos vértices
-                    temp_pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
-                    # Mantener posiciones antiguas y agregar nuevas
-                    for v in new_vertices:
-                        self.graph_pos[v] = temp_pos[v]
-
-                if removed_vertices:
-                    # Eliminar vértices que ya no existen
-                    for v in removed_vertices:
-                        del self.graph_pos[v]
+                # Hay cambios en vértices - recalcular layout circular completo
+                self.graph_pos = nx.circular_layout(G)
 
         pos = self.graph_pos
 
@@ -839,17 +1228,26 @@ Centro: {', '.join(result['center_vertices'])}    |    Centroide: {', '.join(res
         )
 
         # Colores de aristas
-        if highlight_edges:
-            # Dibujar aristas no destacadas
-            normal_edges = []
+        if branches or chords or highlight_edges:
+            # Categorizar aristas
+            branch_edges = []
+            chord_edges = []
             highlight_edges_list = []
+            normal_edges = []
 
             for u, v, data in G.edges(data=True):
-                if data.get('name') in highlight_edges:
+                edge_name = data.get('name')
+
+                if branches and edge_name in branches:
+                    branch_edges.append((u, v))
+                elif chords and edge_name in chords:
+                    chord_edges.append((u, v))
+                elif highlight_edges and edge_name in highlight_edges:
                     highlight_edges_list.append((u, v))
                 else:
                     normal_edges.append((u, v))
 
+            # Dibujar aristas normales (grises claros)
             if normal_edges:
                 nx.draw_networkx_edges(
                     G, pos, ax=self.ax,
@@ -859,6 +1257,27 @@ Centro: {', '.join(result['center_vertices'])}    |    Centroide: {', '.join(res
                     alpha=0.3
                 )
 
+            # Dibujar ramas (azul)
+            if branch_edges:
+                nx.draw_networkx_edges(
+                    G, pos, ax=self.ax,
+                    edgelist=branch_edges,
+                    edge_color='#3498db',
+                    width=3,
+                    alpha=0.9
+                )
+
+            # Dibujar cuerdas (naranja)
+            if chord_edges:
+                nx.draw_networkx_edges(
+                    G, pos, ax=self.ax,
+                    edgelist=chord_edges,
+                    edge_color='#e67e22',
+                    width=3,
+                    alpha=0.9
+                )
+
+            # Dibujar aristas destacadas (verde)
             if highlight_edges_list:
                 nx.draw_networkx_edges(
                     G, pos, ax=self.ax,
@@ -885,7 +1304,7 @@ Centro: {', '.join(result['center_vertices'])}    |    Centroide: {', '.join(res
         nx.draw_networkx_edge_labels(
             G, pos, edge_labels, ax=self.ax,
             font_size=8,
-            font_color='#ecf0f1'
+            font_color='#000000'
         )
 
         title = f"Vértices: {len(self.graph.vertices)}, Aristas: {len(self.graph.edges)}"
@@ -898,6 +1317,26 @@ Centro: {', '.join(result['center_vertices'])}    |    Centroide: {', '.join(res
             fontsize=14,
             fontweight='bold'
         )
+
+        # Agregar leyenda si hay ramas o cuerdas
+        if branches or chords:
+            legend_text = "Leyenda: "
+            if branches:
+                legend_text += "🔵 Ramas (Azul)"
+            if branches and chords:
+                legend_text += " | "
+            if chords:
+                legend_text += "🟠 Cuerdas (Naranja)"
+
+            self.ax.text(
+                0.02, 0.98, legend_text,
+                transform=self.ax.transAxes,
+                fontsize=10,
+                verticalalignment='top',
+                bbox=dict(boxstyle='round', facecolor='#2b2b2b', alpha=0.8, edgecolor='#95a5a6'),
+                color='white'
+            )
+
         self.ax.axis('off')
         self.canvas.draw()
 
@@ -940,9 +1379,77 @@ Centro: {', '.join(result['center_vertices'])}    |    Centroide: {', '.join(res
                     self.graph = WeightedGraph.from_json(f.read())
                 self.current_tree = None
                 self.draw_graph()
+                self.update_edit_dropdowns()
                 messagebox.showinfo("Éxito", "Grafo cargado exitosamente")
             except Exception as e:
                 messagebox.showerror("Error", f"Error al cargar: {str(e)}")
+
+    def load_from_matrices(self):
+        """Carga un grafo desde la sección de operaciones de matrices"""
+        filename = filedialog.askopenfilename(
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+            title="Cargar Grafo desde Matrices"
+        )
+
+        if not filename:
+            return
+
+        try:
+            with open(filename, 'r', encoding='utf-8') as f:
+                import json
+                data = json.load(f)
+
+            # Convertir desde formato GraphData a WeightedGraph
+            # El archivo puede contener múltiples grafos, usamos el primero
+            if isinstance(data, dict) and "graphs" in data:
+                graph_data = data["graphs"][0] if data.get("graphs") else None
+            elif isinstance(data, dict):
+                graph_data = data
+            else:
+                graph_data = None
+
+            if not graph_data or not isinstance(graph_data, dict):
+                messagebox.showerror("Error", "El archivo no contiene grafos válidos")
+                return
+
+            # Crear nuevo WeightedGraph
+            self.graph = WeightedGraph()
+            self.graph.vertices = set(graph_data.get("vertices", []))
+
+            # Procesar aristas - manejar diferentes formatos
+            edges = graph_data.get("edges", [])
+            if isinstance(edges, list):
+                for i, edge_item in enumerate(edges):
+                    if isinstance(edge_item, dict):
+                        # Formato: {"name": "e1", "vertices": ["a", "b"]}
+                        edge_name = edge_item.get("name", f"e{i+1}")
+                        vertices = edge_item.get("vertices", [])
+                        if len(vertices) >= 2:
+                            weight = 1.0
+                            self.graph.add_edge(edge_name, vertices[0], vertices[1], weight)
+
+            self.current_tree = None
+            self.is_directed_var.set(graph_data.get("is_directed", False))
+            self.has_weights_var.set(graph_data.get("has_weights", True))
+            self.on_graph_option_changed()
+
+            # Actualizar UI
+            vertices_list = sorted(list(self.graph.vertices))
+            self.edge_v1_combo.configure(values=vertices_list)
+            self.edge_v2_combo.configure(values=vertices_list)
+            self.update_edit_dropdowns()
+
+            self.draw_graph()
+            messagebox.showinfo(
+                "Éxito",
+                f"Grafo cargado:\n{len(self.graph.vertices)} vértices\n{len(self.graph.edges)} aristas"
+            )
+
+        except json.JSONDecodeError:
+            messagebox.showerror("Error", "El archivo no es JSON válido")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al cargar desde matrices:\n{str(e)}")
 
     def clear_all(self):
         """Limpia todo"""
