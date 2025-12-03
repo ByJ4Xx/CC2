@@ -17,13 +17,13 @@ from views.residue import ResidueContent
 from views.huffman import HuffmanContent
 from views.residue_multiple import ResidueMultipleContent
 from views.external_dynamic import ExternalDynamicContent
-from views.external_index import ExternalIndexView
+from views.external_index_new import ExternalIndexNewView
+from views.external_hash import ExternalHashView
 
 
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        print(tkFont.nametofont("TkDefaultFont").actual())
         self.title("Algoritmos · Búsquedas y Grafos")
         self.after(100, lambda: self.state("zoomed"))
 
@@ -73,7 +73,8 @@ class App(ctk.CTk):
             "externas:secuencial": ExternalSequentialContent(self.content_container),
             "externas:binaria": ExternalBinaryContent(self.content_container),
             "externas:dinamicas": ExternalDynamicContent(self.content_container),
-            "externas:indices": ExternalIndexView(self.content_container),
+            "externas:indices": ExternalIndexNewView(self.content_container),
+            "externas:hash": ExternalHashView(self.content_container),
             "grafos:operaciones": GraphOperationsContent(self.content_container),
             "grafos:teoria": GraphTheoryContent(self.content_container),
             "grafos:arboles": SpanningTreesContent(self.content_container)

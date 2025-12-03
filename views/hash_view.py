@@ -5,6 +5,7 @@ import json
 import math
 import tkinter.filedialog as fd
 import tkinter.messagebox as mb
+import tkinter as tk
 from typing import Optional
 
 from .base import BaseContent
@@ -174,26 +175,27 @@ class HashContent(BaseContent):
                         items = []
                     if items:
                         joiner = " -> " if mode == "encadenamiento" else ", "
-                        self.viewer.insert("end", f"[{i:>4}]  {joiner.join(str(x) for x in items)}\n")
+                        self.viewer.insert("end", f"[{i+1:>4}]  {joiner.join(str(x) for x in items)}\n")
                     else:
-                        self.viewer.insert("end", f"[{i:>4}]  -\n")
+                        self.viewer.insert("end", f"[{i+1:>4}]  -\n")
                     continue
                 val = None
                 if i < len(tabla):
                     val = tabla[i]
                 if isinstance(val, int):
-                    self.viewer.insert("end", f"[{i:>4}]  {val}\n")
+                    self.viewer.insert("end", f"[{i+1:>4}]  {val}\n")
                 elif val is TOMBSTONE:
-                    self.viewer.insert("end", f"[{i:>4}]  †\n")
+                    self.viewer.insert("end", f"[{i+1:>4}]  †\n")
                 else:
-                    self.viewer.insert("end", f"[{i:>4}]  -\n")
+                    self.viewer.insert("end", f"[{i+1:>4}]  -\n")
             if cap > mostrar:
                 self.viewer.insert("end", f"... ({cap - mostrar} posiciones no mostradas)\n")
         try:
             w = getattr(self.viewer, "_textbox", self.viewer)
             w.tag_remove("found", "1.0", "end")
-            if highlight_index is not None and cap > 0 and highlight_index < mostrar:
-                line = highlight_index + 1
+            # highlight_index is 1-based (structure returns indices starting at 1)
+            if highlight_index is not None and cap > 0 and 1 <= highlight_index <= mostrar:
+                line = highlight_index
                 w.tag_add("found", f"{line}.0", f"{line}.end")
                 try:
                     w.see(f"{line}.0")
@@ -255,11 +257,66 @@ class HashContent(BaseContent):
         hf_key = label_to_key[hf_label]
         coll_key = label_to_c[coll_label]
         try:
-            self.structure = HashStructure(10 ** exp, klen, hf_key, coll_key)
+            # For plegamiento/truncamiento, prompt user for options
+            trunc_positions = None
+            folding_op = None
+            capacity = 10 ** exp
+            if hf_key == "plegamiento":
+                # modal to choose Suma or Multiplicación
+                dlg = tk.Toplevel(self)
+                dlg.title("Plegamiento: operación")
+                tk.Label(dlg, text="Seleccione operación para plegamiento:").pack(padx=12, pady=8)
+                var = tk.StringVar(value="Suma")
+                rbf = tk.Frame(dlg)
+                rbf.pack(padx=12, pady=6)
+                tk.Radiobutton(rbf, text="Suma", variable=var, value="Suma").pack(side="left", padx=6)
+                tk.Radiobutton(rbf, text="Multiplicación", variable=var, value="Multiplicación").pack(side="left", padx=6)
+                def on_ok_f():
+                    nonlocal folding_op
+                    folding_op = "suma" if var.get() == "Suma" else "multiplicacion"
+                    dlg.destroy()
+                tk.Button(dlg, text="OK", command=on_ok_f).pack(pady=8)
+                dlg.transient(self)
+                dlg.grab_set()
+                self.wait_window(dlg)
+
+            if hf_key == "truncamiento":
+                # Allowed positions will be according to n (the exponent),
+                # but cannot exceed key length
+                allowed = min(exp, klen)
+                if allowed <= 0:
+                    allowed = 1
+                dlg = tk.Toplevel(self)
+                dlg.title("Truncamiento: seleccionar posiciones")
+                tk.Label(dlg, text=f"Seleccione exactamente {allowed} posiciones (0..{klen-1})").pack(padx=12, pady=8)
+                vars: list[tk.IntVar] = []
+                cbf = tk.Frame(dlg)
+                cbf.pack(padx=12, pady=6)
+                for i in range(klen):
+                    v = tk.IntVar(value=0)
+                    cb = tk.Checkbutton(cbf, text=str(i), variable=v)
+                    cb.grid(row=0, column=i, padx=4)
+                    vars.append(v)
+                def on_ok_t():
+                    chosen = [i for i, vv in enumerate(vars) if vv.get()]
+                    nonlocal trunc_positions
+                    if len(chosen) != allowed:
+                        mb.showerror("Error", f"Debe seleccionar exactamente {allowed} posiciones")
+                        return
+                    trunc_positions = chosen
+                    dlg.destroy()
+                tk.Button(dlg, text="OK", command=on_ok_t).pack(pady=8)
+                dlg.transient(self)
+                dlg.grab_set()
+                self.wait_window(dlg)
+
+            self.structure = HashStructure(10 ** exp, klen, hf_key, coll_key,
+                                           trunc_positions=trunc_positions,
+                                           folding_op=folding_op)
         except Exception as e:
             self._error(str(e))
             return
-        self._set_estado(f"Estructura hash creada ({hf_label} + {coll_label}).")
+            self._set_estado(f"Estructura hash creada ({hf_label} + {coll_label}).")
         self._set_config_enabled(False)
         self._set_controls_enabled(True)
         self._update_counters()

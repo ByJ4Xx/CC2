@@ -8,17 +8,27 @@ class DynamicTotalArray:
 
     columns: number of columns (cubetas)
     records: number of records per column (rows)
-    do_threshold: expansion threshold (percent, 70-90)
-    do_reduction_threshold: reduction threshold (percent, 70-90)
+    do_threshold: expansion threshold (percent, 65-85)
+    do_reduction_threshold: reduction threshold (percent, 85-110)
     """
 
-    def __init__(self, columns: int = 2, records: int = 2, do_threshold: int = 80, do_reduction_threshold: int = 75):
+    def __init__(self, columns: int = 2, records: int = 2, do_threshold: int = 75, do_reduction_threshold: int = 85):
         if columns < 1 or records < 1:
             raise ValueError("columns and records must be >= 1")
+        # Validate DO ranges: expansion DO in [65,85], reduction DO in [85,110]
+        do_threshold = int(do_threshold)
+        do_reduction_threshold = int(do_reduction_threshold)
+        if not (65 <= do_threshold <= 85):
+            raise ValueError("DO de expansión debe estar entre 65 y 85")
+        if not (85 <= do_reduction_threshold <= 110):
+            raise ValueError("DO de reducción debe estar entre 85 y 110")
+        if do_reduction_threshold <= do_threshold:
+            raise ValueError("DO de reducción debe ser mayor que DO de expansión")
+
         self.columns = int(columns)
         self.records = int(records)
-        self.do_threshold = int(do_threshold)
-        self.do_reduction_threshold = int(do_reduction_threshold)
+        self.do_threshold = do_threshold
+        self.do_reduction_threshold = do_reduction_threshold
         # insertion_order stores ALL inserted keys in chronological order (including collisions)
         self.insertion_order = []
         # columns lists (each column holds keys that currently belong to the structure)
@@ -44,6 +54,9 @@ class DynamicTotalArray:
 
     def insert(self, key: int) -> Dict[str, Any]:
         key = int(key)
+        # disallow duplicates globally
+        if key in self.insertion_order:
+            raise ValueError("Clave duplicada no permitida")
         # record insertion order (keeps collisions too)
         self.insertion_order.append(key)
         col = key % self.columns
@@ -56,12 +69,24 @@ class DynamicTotalArray:
         # occupied is the number of items actually in the structure (not collisions)
         occupied = sum(len(c) for c in self.cols)
         total_capacity = self.columns * self.records
-        do = (occupied / total_capacity) * 100 if total_capacity > 0 else 0.0
+        
+        # DO para expansión: elementos / (columnas × registros) × 100
+        do_expansion = (occupied / total_capacity) * 100 if total_capacity > 0 else 0.0
+        
+        # DO para reducción: elementos / columnas × 100
+        do_reduction = (occupied / self.columns) * 100 if self.columns > 0 else 0.0
 
-        # indicate whether expansion would be required (defer actual expansion)
-        expansion_needed = do >= self.do_threshold
+        # Expansión necesaria si DO_expansión >= umbral_expansión
+        expansion_needed = do_expansion >= self.do_threshold
 
-        return {"expansion_needed": expansion_needed, "do": do, "occupied": occupied, "columns": self.columns, "collision": not inserted}
+        return {
+            "expansion_needed": expansion_needed, 
+            "do_expansion": do_expansion,
+            "do_reduction": do_reduction,
+            "occupied": occupied, 
+            "columns": self.columns, 
+            "collision": not inserted
+        }
 
     def expand(self) -> Dict[str, Any]:
         """Perform the expansion (double columns) and rebuild from insertion_order."""
@@ -69,8 +94,35 @@ class DynamicTotalArray:
         self._rebuild()
         occupied = sum(len(c) for c in self.cols)
         total_capacity = self.columns * self.records
-        do = (occupied / total_capacity) * 100 if total_capacity > 0 else 0.0
-        return {"expanded": True, "columns": self.columns, "do": do, "occupied": occupied}
+        do_expansion = (occupied / total_capacity) * 100 if total_capacity > 0 else 0.0
+        do_reduction = (occupied / self.columns) * 100 if self.columns > 0 else 0.0
+        return {
+            "expanded": True, 
+            "columns": self.columns, 
+            "do_expansion": do_expansion,
+            "do_reduction": do_reduction,
+            "occupied": occupied
+        }
+
+    def expand_partial(self) -> Dict[str, Any]:
+        """Increase columns by half (columns += columns//2) and rebuild.
+
+        Requires columns to be even to have an exact half; if odd, integer division used.
+        """
+        add = max(1, self.columns // 2)
+        self.columns = self.columns + add
+        self._rebuild()
+        occupied = sum(len(c) for c in self.cols)
+        total_capacity = self.columns * self.records
+        do_expansion = (occupied / total_capacity) * 100 if total_capacity > 0 else 0.0
+        do_reduction = (occupied / self.columns) * 100 if self.columns > 0 else 0.0
+        return {
+            "expanded": True, 
+            "columns": self.columns, 
+            "do_expansion": do_expansion,
+            "do_reduction": do_reduction,
+            "occupied": occupied
+        }
 
     def find(self, key: int) -> Dict[str, Any]:
         key = int(key)
@@ -107,17 +159,57 @@ class DynamicTotalArray:
         self._rebuild()
 
         occupied = sum(len(c) for c in self.cols)
-        # DO reduction calculation per spec: occupied / columns *100
+        total_capacity = self.columns * self.records
+        
+        # DO para expansión
+        do_expansion = (occupied / total_capacity) * 100 if total_capacity > 0 else 0.0
+        
+        # DO para reducción
         do_reduction = (occupied / self.columns) * 100 if self.columns > 0 else 0.0
 
-        reduced = False
+        # Reducir si DO_reducción < DO_reducción_umbral Y columnas > 1
+        should_reduce = False
         if do_reduction < self.do_reduction_threshold and self.columns > 1:
-            # reduce columns by half (integer division), min 1
-            self.columns = max(1, self.columns // 2)
-            self._rebuild()
-            reduced = True
+            should_reduce = True
 
-        return {"removed": removed, "reduced": reduced, "do_reduction": do_reduction, "occupied": occupied, "columns": self.columns}
+        return {
+            "removed": removed, 
+            "should_reduce": should_reduce, 
+            "do_expansion": do_expansion,
+            "do_reduction": do_reduction,
+            "occupied": occupied, 
+            "columns": self.columns
+        }
+
+    def reduce(self) -> Dict[str, Any]:
+        """Perform reduction (halve columns) and rebuild.
+
+        Returns information about the new state.
+        """
+        self.columns = max(1, self.columns // 2)
+        self._rebuild()
+        occupied = sum(len(c) for c in self.cols)
+        total_capacity = self.columns * self.records
+        do_expansion = (occupied / total_capacity) * 100 if total_capacity > 0 else 0.0
+        do_reduction = (occupied / self.columns) * 100 if self.columns > 0 else 0.0
+        return {
+            "reduced": True, 
+            "columns": self.columns, 
+            "do_expansion": do_expansion,
+            "do_reduction": do_reduction,
+            "occupied": occupied
+        }
+
+    def current_do_expansion(self) -> float:
+        """Return current DO for expansion (occupied / total_capacity * 100)."""
+        occupied = sum(len(c) for c in self.cols)
+        total_capacity = self.columns * self.records
+        return (occupied / total_capacity) * 100 if total_capacity > 0 else 0.0
+
+    def current_do_reduction(self) -> float:
+        """Return current DO for reduction (occupied / columns * 100)."""
+        occupied = sum(len(c) for c in self.cols)
+        return (occupied / self.columns) * 100 if self.columns > 0 else 0.0
 
     def to_dict(self) -> Dict[str, Any]:
         return {

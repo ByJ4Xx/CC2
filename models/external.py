@@ -34,8 +34,8 @@ class ExternalStructureBase:
     def __post_init__(self):
         if not isinstance(self.capacity, int) or self.capacity <= 0:
             raise ValueError("Capacidad inválida")
-        if self.capacity > 10000 or not _is_multiple_of_10(self.capacity):
-            raise ValueError("La capacidad debe ser múltiplo de 10 y ≤ 10000")
+        if self.capacity > 10000:
+            raise ValueError("La capacidad debe ser ≤ 10000")
         if not (1 <= int(self.key_length) <= 9):
             raise ValueError("Longitud de clave inválida (1-9)")
         # Normalizar datos iniciales
@@ -66,11 +66,12 @@ class ExternalStructureBase:
         return count
 
     def _compute_block_layout(self) -> tuple[int, int]:
-        sqrt_size = math.isqrt(self.capacity)
-        if sqrt_size > 0 and self.capacity % sqrt_size == 0:
-            return sqrt_size, self.capacity // sqrt_size
-        block_size = max(1, self.capacity // 10)
-        return block_size, 10
+        # Use number of blocks = ceil(sqrt(capacity)) and block size = ceil(capacity / num_blocks)
+        num_blocks = math.ceil(math.sqrt(self.capacity))
+        if num_blocks <= 0:
+            num_blocks = 1
+        block_size = max(1, math.ceil(self.capacity / num_blocks))
+        return block_size, num_blocks
 
     # Utilidades internas
     def _valid_key(self, value: int) -> bool:
@@ -153,8 +154,8 @@ class ExternalStructureBase:
         datos = data.get("datos")
         if not isinstance(capacidad, int) or capacidad <= 0:
             raise ValueError("Capacidad inválida en archivo")
-        if capacidad > 10000 or not _is_multiple_of_10(capacidad):
-            raise ValueError("Capacidad debe ser múltiplo de 10 y ≤ 10000")
+        if capacidad > 10000:
+            raise ValueError("La capacidad debe ser ≤ 10000")
         if not isinstance(klen, int) or not (1 <= klen <= 9):
             raise ValueError("Longitud de clave inválida en archivo")
         if not isinstance(datos, list):

@@ -21,7 +21,6 @@ class HighlightState:
     block: int
     offset: Optional[int]
     found: bool = False
-    highlight_base: bool = False
 
 
 class ExternalBaseContent(BaseContent):
@@ -52,7 +51,7 @@ class ExternalBaseContent(BaseContent):
         cfg_frame.grid(row=0, column=0, sticky="ew", padx=8, pady=(8, 4))
         cfg_frame.grid_columnconfigure(6, weight=1)
 
-        ctk.CTkLabel(cfg_frame, text="Tamaño (múltiplo de 10):").grid(
+        ctk.CTkLabel(cfg_frame, text="Tamaño:").grid(
             row=0, column=0, padx=(8, 6), pady=8, sticky="w"
         )
         self.capacity_entry = ctk.CTkEntry(cfg_frame, textvariable=self.var_capacity, width=120)
@@ -197,47 +196,36 @@ class ExternalBaseContent(BaseContent):
             return
 
         blocks = self.structure.get_blocks(fill=True)
-        bases = self.structure.get_block_bases()
+        bases = self.structure.get_block_bases()  # Ya no se usará para mostrar
         block_count = len(blocks)
         block_size = self.structure.block_size
 
-        # Encabezados de filas
+        # Encabezados de filas (SOLO encabezados de columnas, NO la fila "Base")
         header_font = ctk.CTkFont(weight="bold")
         self.blocks_container.grid_columnconfigure(0, weight=0)
+        
+        # Eliminar la fila "Base" y mostrar solo los números de registro
         ctk.CTkLabel(self.blocks_container, text="", font=header_font, width=60).grid(
             row=0, column=0, padx=4, pady=(0, 4)
         )
-        ctk.CTkLabel(self.blocks_container, text="Base", font=header_font).grid(
-            row=1, column=0, padx=4, pady=2, sticky="e"
-        )
+        
+        # MOSTRAR SOLO REGISTROS (sin la fila "Base")
         for r in range(block_size):
             ctk.CTkLabel(self.blocks_container, text=f"R{r + 1}").grid(
-                row=r + 2, column=0, padx=4, pady=2, sticky="e"
+                row=r + 1, column=0, padx=4, pady=2, sticky="e"  # Cambiado a row=r+1
             )
 
         # Columnas por bloque
         for col in range(block_count):
             self.blocks_container.grid_columnconfigure(col + 1, weight=1)
             block_highlight = bool(highlight and highlight.block == col)
-            base_fg = self._highlight_color(
-                block_highlight and highlight.highlight_base if highlight else False,
-                highlight,
-            )
+            # ELIMINADO: la lógica para highlight_base ya que no hay fila Base
 
             header = ctk.CTkLabel(self.blocks_container, text=f"B{col + 1}", font=header_font)
             header.grid(row=0, column=col + 1, padx=4, pady=(0, 4))
 
-            base_val = bases[col]
-            base_text = self._format_value(base_val)
-            base_label = ctk.CTkLabel(
-                self.blocks_container,
-                text=base_text,
-                fg_color=base_fg,
-                corner_radius=6,
-                text_color="black" if base_fg else None,
-            )
-            base_label.grid(row=1, column=col + 1, padx=2, pady=2, sticky="nsew")
-
+            # ELIMINADO: Todo el código que mostraba la fila Base
+            
             for r, value in enumerate(blocks[col]):
                 fg = None
                 text_color = None
@@ -251,23 +239,40 @@ class ExternalBaseContent(BaseContent):
                     corner_radius=6,
                     text_color=text_color,
                 )
-                cell.grid(row=r + 2, column=col + 1, padx=2, pady=2, sticky="nsew")
+                # Ajustado: row=r+1 (porque la fila 0 es para encabezados de bloque)
+                cell.grid(row=r + 1, column=col + 1, padx=2, pady=2, sticky="nsew")
             self._update_scroll_region()
+            self._update_window_width()
 
     def _sync_canvas_theme(self):
         fg_color = self._apply_appearance_mode(self.blocks_container.cget("fg_color"))
         self.blocks_canvas.configure(background=fg_color)
 
     def _update_scroll_region(self):
-        bbox = self.blocks_canvas.bbox("all")
-        if bbox is None:
-            bbox = (0, 0, 0, 0)
-        self.blocks_canvas.configure(scrollregion=bbox)
+        # Obtiene el tamaño requerido por el contenedor
+        req_width = self.blocks_container.winfo_reqwidth()
+        req_height = self.blocks_container.winfo_reqheight()
+    
+        # Asegura que la región de scroll sea al menos del tamaño del contenedor
+        self.blocks_canvas.configure(scrollregion=(0, 0, max(req_width, 1), max(req_height, 1)))
 
     def _on_canvas_configure(self, event):
+        self._update_window_width()
+
+    def _update_window_width(self):
+        """Actualiza el ancho de la ventana interna basado en el contenido"""
+        canvas_width = self.blocks_canvas.winfo_width()
         req_width = self.blocks_container.winfo_reqwidth()
-        new_width = max(event.width, req_width)
-        self.blocks_canvas.itemconfigure(self.blocks_window, width=new_width)
+        
+        # Usa el mayor entre el ancho requerido y el ancho del canvas
+        new_width = max(canvas_width, req_width)
+        
+        # Solo actualiza si hay cambio
+        current_width = self.blocks_canvas.itemcget(self.blocks_window, "width")
+        if current_width != str(new_width):
+            self.blocks_canvas.itemconfigure(self.blocks_window, width=new_width)
+        
+        # Fuerza la actualización de la región de scroll
         self._update_scroll_region()
 
     def _highlight_color(self, active: bool, highlight: Optional[HighlightState]) -> Optional[str]:
@@ -376,7 +381,7 @@ class ExternalBaseContent(BaseContent):
                     block=result.block,
                     offset=result.offset,
                     found=True,
-                    highlight_base=True,
+                    # ELIMINADO: highlight_base=True,
                 )
             )
         else:
@@ -389,7 +394,7 @@ class ExternalBaseContent(BaseContent):
                         block=result.block,
                         offset=None,
                         found=False,
-                        highlight_base=True,
+                        # ELIMINADO: highlight_base=True,
                     )
                 )
             else:
