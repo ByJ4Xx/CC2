@@ -430,38 +430,46 @@ class GraphOperationsManager:
         """
         Producto tensorial: G1 ⊗ G2
         Vértices: (u, v) para todo u en S1, v en S2
-        Aristas: ((u1,v1), (u2,v2)) si existe (u1,u2) en A1 Y existe (v1,v2) en A2
+        Aristas: ((u1,v1), (u2,v2)) y ((u1,v2), (u2,v1)) si existe (u1,u2) en A1 Y existe (v1,v2) en A2
+        (Ambas aristas porque los grafos son no dirigidos)
 
-        Ejemplo: G1 con aristas (a-b), G2 con aristas (1-2)
-        Resultado: Vértices {(a,1), (a,2), (b,1), (b,2)}
-                   Aristas: [(a,1)-(b,2)] (porque a-b existe Y 1-2 existe)
+        Ejemplo: G1 con S1={a,b}, A1={ab}; G2 con S2={c,d,e}, A2={cd}
+        Resultado: S3={ac,ad,ae,bc,bd,be}
+                   A3={acbd, adbc} (dos aristas porque c-d puede ir en ambas direcciones)
         """
         result = GraphData(number=self.next_number, is_result=True)
-        
+
         # Crear vértices (u,v)
         for u in g1.vertices:
             for v in g2.vertices:
                 result.vertices.add(f"({u},{v})")
-        
+
         edge_counter = 1
-        
-        # Crear aristas solo si existen en ambos grafos
+
+        # Crear aristas: para cada par de aristas, crear dos aristas
         for edge1 in g1.edges:
-            v1_list = edge1.get_vertices_list()
-            if len(v1_list) < 2:
+            vertices1 = edge1.get_vertices_list()
+            if len(vertices1) < 2:
                 continue
-            u1, u2 = v1_list[0], v1_list[1]
-            
+            u1, u2 = vertices1[0], vertices1[1]
+
             for edge2 in g2.edges:
-                v2_list = edge2.get_vertices_list()
-                if len(v2_list) < 2:
+                vertices2 = edge2.get_vertices_list()
+                if len(vertices2) < 2:
                     continue
-                v1, v2 = v2_list[0], v2_list[1]
-                
-                new_edge = Edge(f"t{edge_counter}", f"({u1},{v1})", f"({u2},{v2})")
-                result.edges.add(new_edge)
+                v1, v2 = vertices2[0], vertices2[1]
+
+                # Primera arista: (u1,v1) - (u2,v2)
+                new_edge1 = Edge(f"t{edge_counter}", f"({u1},{v1})", f"({u2},{v2})")
+                result.edges.add(new_edge1)
                 edge_counter += 1
-        
+
+                # Segunda arista: (u1,v2) - (u2,v1)
+                # (porque en grafos no dirigidos, v1-v2 es igual a v2-v1)
+                new_edge2 = Edge(f"t{edge_counter}", f"({u1},{v2})", f"({u2},{v1})")
+                result.edges.add(new_edge2)
+                edge_counter += 1
+
         self.graphs[self.next_number] = result
         self.next_number += 1
         return result
