@@ -924,31 +924,48 @@ class WeightedGraph:
 
     def find_median(self) -> Dict:
         """
-        Encuentra la mediana del grafo
+        Encuentra la mediana del grafo usando Floyd-Warshall
         La mediana es el vértice (o vértices) que minimiza la suma de distancias
-        a todos los demás vértices
+        a todos los demás vértices (excluyendo la distancia a sí mismo)
 
         Returns:
             Dict con vértices medianos y suma mínima de distancias
         """
-        G = self._to_networkx()
+        # Usar Floyd-Warshall para obtener la tabla de distancias
+        fw_result = self.floyd_warshall()
 
-        if not nx.is_connected(G):
+        if not fw_result["success"]:
             return {
                 "success": False,
-                "error": "El grafo no es conexo"
+                "error": fw_result.get("error", "Error en Floyd-Warshall")
             }
 
-        vertices_list = list(G.nodes())
-        distance_sums = {}
+        vertices_list = fw_result["vertices"]
+        distance_matrix = fw_result["distance_matrix"]
+        vertex_to_idx = {v: i for i, v in enumerate(vertices_list)}
 
-        # Calcular suma de distancias para cada vértice
-        for v in vertices_list:
-            shortest_paths = nx.single_source_shortest_path_length(G, v)
-            distance_sums[v] = sum(shortest_paths.values())
+        distance_sums = {}
+        INF = float('inf')
+
+        # Para cada vértice, sumar las distancias a todos los demás
+        # (excluyendo la distancia a sí mismo, que es 0)
+        for i, v in enumerate(vertices_list):
+            total_distance = 0
+            for j in range(len(vertices_list)):
+                if i != j:  # No incluir la distancia a sí mismo
+                    dist = distance_matrix[i][j]
+                    if dist != INF:
+                        total_distance += dist
+                    else:
+                        # Si no hay camino, el grafo no es conexo
+                        return {
+                            "success": False,
+                            "error": "El grafo no es conexo"
+                        }
+            distance_sums[v] = total_distance
 
         # Encontrar mínimo
-        min_sum = min(distance_sums.values())
+        min_sum = min(distance_sums.values()) if distance_sums else 0
 
         # Mediana: vértices con suma mínima
         median_vertices = [v for v, s in distance_sums.items() if s == min_sum]
