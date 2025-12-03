@@ -430,7 +430,11 @@ class GraphOperationsManager:
         """
         Producto tensorial: G1 ⊗ G2
         Vértices: (u, v) para todo u en S1, v en S2
-        Aristas: ((u1,v1), (u2,v2)) si (u1,u2) en A1 Y (v1,v2) en A2
+        Aristas: ((u1,v1), (u2,v2)) si existe (u1,u2) en A1 Y existe (v1,v2) en A2
+
+        Ejemplo: G1 con aristas (a-b), G2 con aristas (1-2)
+        Resultado: Vértices {(a,1), (a,2), (b,1), (b,2)}
+                   Aristas: [(a,1)-(b,2)] (porque a-b existe Y 1-2 existe)
         """
         result = GraphData(number=self.next_number, is_result=True)
         
