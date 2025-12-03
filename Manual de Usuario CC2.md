@@ -350,11 +350,355 @@ Aqui se añade un componente adicional
 - 4. Aquí existe un botón "Mostrar tabla de códigos" que al ser presionado muestra una tabla con la información de de cada letra en binario con la cual se esta basando el programa para hacer la inserción y debajo esta un pequeño apartado de texto que le informa al usuario de las acciones que se van realizando.
 - 5. Existen 3 botones, el boton para guardar el arbol, el boton para cargar y el boton para limpiar la seccion 1 (donde se ve el arbol)
 
-# 5. Uso de los Módulos de Grafos
+# 5. Uso de los Módulos de Búsquedas Externas
+
+Las búsquedas externas están diseñadas para manejar **grandes volúmenes de datos** que no caben en la memoria principal de la computadora. Estos datos se almacenan en dispositivos secundarios como discos duros, organizados en **bloques o archivos**.
+
+**¿Cuándo usar Búsquedas Externas?**
+
+- Cuando tiene millones de registros (imposibles en RAM)
+- Cuando trabaja con archivos muy grandes
+- Cuando el sistema necesita acceso eficiente a datos en disco
+
+A continuación, se detallan los módulos disponibles:
+
+## 5.1 Búsqueda Secuencial y Binaria Externas
+
+Estos módulos adaptan los algoritmos de búsqueda interna para trabajar con datos almacenados en **bloques** en lugar de en memoria.
+
+**Diferencia entre Secuencial y Binaria:**
+
+- **Secuencial:** Revisa cada bloque de datos uno por uno hasta encontrar lo que busca. Es más lento pero simple.
+- **Binaria:** Divide los bloques en mitades (como la búsqueda binaria interna) para encontrar datos más rápidamente. Requiere que los datos estén ordenados.
+
+Ambas comparten la misma interfaz, por lo que la guía a continuación aplica a ambas.
+
+![[Pasted image busqueda externa.png]]
+
+1. **Panel de Configuración:** Permite definir:
+    - **Capacidad:** Tamaño total de datos (similar a búsquedas internas, ej. 10^4 = 10,000 registros)
+    - **Tamaño de Bloque:** Número de registros que caben en cada bloque o lectura de disco
+    - Botones para **Crear** y **Limpiar** la estructura
+    - Indicador de cuántos bloques se crearán automáticamente
+
+2. **Panel de Operaciones:** Campo de texto para ingresar una clave y botones para:
+    - **Insertar:** Agrega un dato a la estructura
+    - **Buscar:** Localiza un dato usando bloques
+    - **Eliminar:** Remueve un dato
+
+3. **Generador Aleatorio:** Permite insertar múltiples claves al azar rápidamente para simular un archivo grande.
+
+4. **Gestión de Archivos:** Botones para **Guardar** y **Cargar** la estructura externa.
+
+5. **Registro de Eventos:** Muestra información sobre las operaciones realizadas.
+
+6. **Visualización de Bloques:** Representación gráfica de cómo los datos se organizan en bloques. Verá bloques numerados (Bloque 0, Bloque 1, etc.) con los datos dentro.
+
+#### Guía de Uso
+
+1. **Crear la Estructura:**
+
+    - En el **Panel de Configuración**, especifique:
+        - **Capacidad:** Por ejemplo, 10^3 (1,000 registros)
+        - **Tamaño de Bloque:** Por ejemplo, 10 (10 registros por bloque)
+
+    - El sistema calculará automáticamente que necesita 100 bloques.
+
+    - Presione **Crear**.
+
+2. **Insertar Datos:**
+
+    - **Manualmente:** Ingrese una clave en el **Panel de Operaciones** y presione **Insertar**.
+
+    - **Aleatoriamente:** En el **Generador Aleatorio**, especifique la cantidad (ej. 50) y presione el botón de generación.
+
+    - Observe en la **Visualización de Bloques** cómo los datos se distribuyen en los bloques.
+
+3. **Buscar Datos:**
+
+    - Ingrese la clave en el **Panel de Operaciones**.
+
+    - Presione **Buscar**.
+
+    - El **Registro de Eventos** mostrará:
+        - Cuál bloque fue consultado
+        - Si encontró o no el dato
+        - Cuántos bloques se leyeron en total (esto le muestra la eficiencia)
+
+4. **Eliminar Datos:**
+
+    - Ingrese la clave y presione **Eliminar**.
+
+    - El dato se marcará como eliminado en su bloque.
+
+5. **Guardar y Cargar:**
+
+    - Use **Guardar** para almacenar el archivo externo simulado.
+
+    - Use **Cargar** para recuperar un archivo anterior.
+
+#### Consejos Prácticos
+
+**Para entender la diferencia:**
+
+- Cree una estructura con 1,000 datos
+- Busque un dato al final usando **Búsqueda Secuencial**
+- Observe cuántos bloques se leyeron (cercano a 100)
+- Repita lo mismo con **Búsqueda Binaria**
+- Observe que se leyeron muchos menos bloques (cercano a 7-8)
+
+**Datos ordenados:**
+
+Si trabaja con búsqueda binaria, asegúrese de que sus datos estén ordenados. El sistema mantiene orden automáticamente al insertar.
+
+## 5.2 Estructuras Dinámicas (Arrays Dinámicos)
+
+Este módulo simula un archivo que **crece automáticamente** cuando alcanza ciertos límites de ocupación. Es útil entender cómo los sistemas manejan archivos que cambian de tamaño.
+
+**¿Qué es una Estructura Dinámica?**
+
+Imagine un archivo que comienza con capacidad para 100 registros. Cuando llena el 70% (70 registros), el sistema automáticamente **expande** el archivo a mayor capacidad (como 150 o 200 registros), copiando todos los datos al nuevo espacio.
+
+![[Pasted image dinamicas.png]]
+
+1. **Panel de Configuración:**
+    - **Capacidad Inicial:** Número inicial de registros que caben
+    - **Umbral de Expansión:** Porcentaje de ocupación que dispara el crecimiento (típicamente 65-70%)
+    - **Umbral de Reducción:** Porcentaje para reducir tamaño si hay muy pocos datos (típicamente 85-110%)
+    - Botones para **Crear** y **Limpiar**
+
+2. **Panel de Operaciones:** Campo de entrada de clave y botones para **Insertar**, **Buscar** y **Eliminar**.
+
+3. **Generador Aleatorio:** Para llenar rápidamente la estructura y observar expansiones automáticas.
+
+4. **Gestión de Archivos:** **Guardar** y **Cargar** el estado.
+
+5. **Gráfico de Ocupación:** Visualización que muestra:
+    - Capacidad actual del archivo
+    - Cuántos registros se han insertado
+    - Porcentaje de ocupación (DO = Densidad de Ocupación)
+    - Indicador visual de cuándo ocurrirá expansión
+
+6. **Registro de Eventos:** Muestra cuándo ocurren expansiones, cuál era la capacidad anterior y cuál es la nueva.
+
+#### Guía de Uso
+
+1. **Configurar y Crear:**
+
+    - Capacidad Inicial: 100 registros
+    - Umbral de Expansión: 65%
+    - Presione **Crear**
+
+2. **Observar Expansión:**
+
+    - En el **Generador Aleatorio**, ingrese 70 (para llenar 70% de 100).
+
+    - Presione el botón de generación.
+
+    - En el **Registro de Eventos**, verá un mensaje: _"Expansión automática: 100 → 110 registros"_
+
+    - El **Gráfico de Ocupación** se actualizará.
+
+3. **Continuar Insertando:**
+
+    - Agregue 50 más (para ver otra expansión).
+
+    - Observe cómo el sistema sigue expandiendo automáticamente según sea necesario.
+
+4. **Entender la Estrategia:**
+
+    - **DO (Densidad de Ocupación):** Muestra porcentaje de uso actual.
+
+    - **¿Por qué expansión?** Porque los sistemas necesitan espacio libre para manejar inserciones nuevas eficientemente.
+
+    - **¿Por qué no hace la estructura infinita?** Porque el espacio en disco también es limitado.
+
+#### Ejemplo Visual
+
+```
+Estado Inicial: 100 registros, 0 insertados (DO = 0%)
+Después de 65 inserciones: (DO = 65%)
+  → Se dispara expansión automática
+  → Ahora 110 registros de capacidad
+Después de 75 más: (DO = 64% de 110)
+  → Aún espacio disponible, no expande
+```
+
+## 5.3 Funciones Hash Externas
+
+Este módulo es similar a las **funciones hash internas**, pero optimizado para trabajar con datos en **bloques y disco** en lugar de en memoria.
+
+**¿Qué hace diferente al Hash Externo?**
+
+- Las funciones hash ordinarias trabajan en RAM
+- Las funciones hash externas distribuyen datos entre múltiples archivos o buckets en disco
+- Minimiza las lecturas de disco necesarias
+
+![[Pasted image hash externo.png]]
+
+1. **Panel de Configuración:**
+    - **Función Hash:** Método para convertir clave en dirección (Cuadrada, Módulo, Plegamiento, Truncamiento)
+    - **Solución de Colisiones:** Cómo manejar claves que aspiran a la misma ubicación
+    - **Número de Buckets:** Cantidad de archivos o zonas en disco (aumentar reduce colisiones)
+    - Botones para **Crear** y **Limpiar**
+
+2. **Panel de Operaciones:** Ingrese clave y botones para **Insertar**, **Buscar**, **Eliminar**.
+
+3. **Generador Aleatorio:** Llenar rápidamente para observar distribución.
+
+4. **Gestión de Archivos:** **Guardar** y **Cargar**.
+
+5. **Visualización de Buckets:** Muestra gráficamente:
+    - Cuántos buckets (archivos) existen
+    - Cuántos datos en cada bucket
+    - Distribución equilibrada o desbalanceada
+    - Indicadores de colisiones
+
+6. **Registro de Eventos:** Detalles de cada operación.
+
+#### Guía de Uso
+
+1. **Configurar:**
+
+    - Función Hash: "Módulo"
+    - Colisiones: "Encadenamiento"
+    - Buckets: 10
+    - Presione **Crear**
+
+2. **Insertar Datos:**
+
+    - Agregue 20-30 claves aleatoriamente.
+
+    - Observe en **Visualización de Buckets**:
+        - Bucket 0 puede tener 3 datos
+        - Bucket 5 puede tener 2 datos
+        - Etc.
+
+    - Idealmente, los datos se distribuyen uniformemente.
+
+3. **Comparar Funciones Hash:**
+
+    - Limpie y cree una estructura con "Cuadrada" en lugar de "Módulo".
+
+    - Inserte los mismos datos.
+
+    - Compare la distribución:
+        - ¿Hay buckets más llenos con cuadrada que con módulo?
+        - ¿Cuál distribución es mejor?
+
+4. **Entender Colisiones:**
+
+    - Si ve muchos datos en un bucket, significa que varias claves fueron hasheadas al mismo bucket.
+
+    - El método de colisión determina cómo se resuelve esto (encadenamiento significa que se almacenan en una lista dentro del bucket).
+
+## 5.4 Índices Externos
+
+Los índices son **tablas auxiliares** que ayudan a localizar registros sin necesidad de recorrer todo el archivo.
+
+**Analogía del Mundo Real:**
+
+Un índice es como el **índice de un libro**. En lugar de leer todas las páginas para encontrar un tema, consulta el índice, que le dice exactamente qué páginas contienen la información.
+
+![[Pasted image indices.png]]
+
+1. **Panel de Configuración:**
+    - **Capacidad:** Número de registros en el archivo principal
+    - **Tipo de Índice:** Simple, Multinivel, etc. (depende de la aplicación)
+    - Botones para **Crear** y **Limpiar**
+
+2. **Panel de Operaciones:** Ingrese clave y botones para **Insertar**, **Buscar**, **Eliminar**.
+
+3. **Generador Aleatorio:** Llenar el archivo rápidamente.
+
+4. **Gestión de Archivos:** **Guardar** y **Cargar**.
+
+5. **Visualización Dual:**
+    - **Lado Izquierdo:** Tabla Índice (pequeña, contiene claves y referencias)
+    - **Lado Derecho:** Archivo Principal (grande, contiene todos los registros)
+
+6. **Registro de Eventos:** Muestra:
+    - _"Búsqueda: Consultó índice, encontró referencia"_
+    - _"Posición en archivo principal: bloque 15, offset 3"_
+    - Número total de accesos a disco
+
+#### Guía de Uso
+
+1. **Crear la Estructura:**
+
+    - Capacidad: 1000 registros
+    - Presione **Crear**
+
+2. **Insertar Datos:**
+
+    - Agregue manualmente: A, B, C, etc.
+
+    - O genere 100 aleatorios.
+
+    - Observe en la **Tabla Índice** (lado izquierdo) cómo se crean entradas pequeñas.
+
+    - En el **Archivo Principal** (lado derecho), vea dónde se almacenan realmente los datos.
+
+3. **Buscar Usando Índice:**
+
+    - Ingrese una clave (ej. "X").
+
+    - Presione **Buscar**.
+
+    - El **Registro de Eventos** mostrará:
+        - _"Paso 1: Busqué en índice... encontrado"_
+        - _"Paso 2: Accedí al archivo principal en bloque Z"_
+        - _"Datos encontrados"_
+
+    - Esto demuestra dos accesos a disco (uno al índice, uno al archivo).
+
+4. **Comparar con Búsqueda Secuencial:**
+
+    - Sin índice, habría necesitado leer potencialmente 1000 registros.
+
+    - Con índice, solo 2 accesos.
+
+    - Esto muestra por qué los índices son eficientes para archivos grandes.
+
+#### Eficiencia de Índices
+
+```
+Archivo con 1,000,000 de registros:
+
+SIN Índice (Búsqueda Secuencial):
+  Peor caso: 1,000,000 lecturas de disco
+  Promedio: 500,000 lecturas
+
+CON Índice:
+  Casos: 10-20 lecturas de disco (índice multinivel)
+  Mejora: 25,000 a 100,000 veces más rápido
+```
+
+---
+
+#### Tips para Búsquedas Externas
+
+**Elegir el Método Correcto:**
+
+- **Pequeño archivo (< 10MB):** Búsqueda Secuencial está bien
+- **Archivo mediano (10MB - 1GB):** Búsqueda Binaria u Índices
+- **Archivo muy grande (> 1GB):** Índices o Hash Externo
+
+**Expansión Dinámica:**
+
+- Útil cuando no se conoce el tamaño final
+- Tiene un costo computacional (copia de datos)
+- Se usa en sistemas de archivos reales
+
+**Comparación de Técnicas:**
+
+Cree la misma estructura con diferentes métodos para entender sus diferencias en tiempo de búsqueda y accesos a disco.
+
+# 6. Uso de los Módulos de Grafos
 
 A continuación, se detalla el funcionamiento de cada herramienta de grafos. Los grafos son estructuras que representan conexiones entre elementos. Piense en una red de ciudades (elementos) conectadas por carreteras (conexiones).
 
-## 5.1 Operaciones de Grafos
+## 6.1 Operaciones de Grafos
 
 Este módulo permite crear múltiples grafos y realizar operaciones entre ellos, como crear uniones, intersecciones y otras combinaciones que resultan en nuevos grafos.
 
@@ -427,7 +771,7 @@ Una operación de grafos es una manera de combinar o modificar grafos. Por ejemp
 
     - Use **Cargar** para recuperar grafos previamente guardados.
 
-## 5.2 Matrices de Grafos (Teoría de Grafos)
+## 6.2 Matrices de Grafos (Teoría de Grafos)
 
 Este módulo permite visualizar un grafo en forma de tablas matemáticas llamadas **matrices**. Las matrices son una forma especial de representar gráficamente cómo se conectan los puntos.
 
@@ -494,7 +838,7 @@ Las matrices permiten analizar matemáticamente las propiedades de un grafo. En 
 
     - Use **Cargar** para recuperar trabajo anterior.
 
-## 5.3 Árboles de Expansión (Árboles a partir de Grafos)
+## 6.3 Árboles de Expansión (Árboles a partir de Grafos)
 
 Este módulo calcula **árboles de expansión mínimos** a partir de un grafo. Un árbol de expansión es un subconjunto especial del grafo que conecta todos los puntos usando el menor número de conexiones (y opcionalmente el menor peso total).
 
