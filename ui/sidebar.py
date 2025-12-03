@@ -160,9 +160,10 @@ class CollapsibleSidebar(ctk.CTkFrame):
         self.panel_externas.grid(row=3, column=0, sticky="ew", padx=8, pady=(0, 8))
         self.panel_externas.columnconfigure(0, weight=1)
 
+        # Botones en el nuevo orden:
         self.btn_ext_seq = ctk.CTkButton(
             self.panel_externas,
-            text="Secuencial",
+            text="Lineal",
             height=34,
             fg_color="transparent",
             hover_color=("#e5f0ff", "#16324a"),
@@ -184,9 +185,10 @@ class CollapsibleSidebar(ctk.CTkFrame):
         )
         self.btn_ext_bin.grid(row=1, column=0, sticky="ew", padx=8, pady=4)
 
+        # Hash ahora está en la fila 2, después de Binaria
         self.btn_ext_hash = ctk.CTkButton(
             self.panel_externas,
-            text="Hash",
+            text="Funciones Hash",
             height=34,
             fg_color="transparent",
             hover_color=("#e5f0ff", "#16324a"),
@@ -194,8 +196,9 @@ class CollapsibleSidebar(ctk.CTkFrame):
             anchor="w",
             command=lambda: self.on_select("externas", "hash"),
         )
-        self.btn_ext_hash.grid(row=4, column=0, sticky="ew", padx=8, pady=(4, 8))
+        self.btn_ext_hash.grid(row=2, column=0, sticky="ew", padx=8, pady=4)
 
+        # Los demás botones se desplazan hacia abajo
         self.btn_ext_dynamic = ctk.CTkButton(
             self.panel_externas,
             text="Estructuras Dinámicas",
@@ -206,7 +209,7 @@ class CollapsibleSidebar(ctk.CTkFrame):
             anchor="w",
             command=lambda: self.on_select("externas", "dinamicas"),
         )
-        self.btn_ext_dynamic.grid(row=2, column=0, sticky="ew", padx=8, pady=4)
+        self.btn_ext_dynamic.grid(row=3, column=0, sticky="ew", padx=8, pady=4)
 
         self.btn_ext_indices = ctk.CTkButton(
             self.panel_externas,
@@ -218,7 +221,7 @@ class CollapsibleSidebar(ctk.CTkFrame):
             anchor="w",
             command=lambda: self.on_select("externas", "indices"),
         )
-        self.btn_ext_indices.grid(row=3, column=0, sticky="ew", padx=8, pady=(4, 8))
+        self.btn_ext_indices.grid(row=4, column=0, sticky="ew", padx=8, pady=(4, 8))
 
         # GRAFOS (se mantiene igual)
         self.btn_grafos = ctk.CTkButton(

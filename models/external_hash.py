@@ -25,14 +25,14 @@ class ExternalHashStructure:
         if self.num_records <= 0:
             raise ValueError("El número de registros debe ser mayor a 0")
         
-        # B = |sqrt(n)|
-        self.num_blocks = int(math.sqrt(self.num_records))
-        if self.num_blocks == 0: 
+        # B = ceil(sqrt(n)) => number of blocks
+        self.num_blocks = math.ceil(math.sqrt(self.num_records))
+        if self.num_blocks <= 0:
             self.num_blocks = 1
-            
-        # Records per block = |n/B|
-        self.records_per_block = int(self.num_records / self.num_blocks)
-        if self.records_per_block == 0:
+
+        # Records per block = ceil(n / B)
+        self.records_per_block = math.ceil(self.num_records / self.num_blocks)
+        if self.records_per_block <= 0:
             self.records_per_block = 1
 
         # Validate base for conversion_base

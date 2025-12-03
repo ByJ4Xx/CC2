@@ -30,6 +30,8 @@ class HashStructure:
     hash_func: str  # 'cuadrado' | 'modular' | 'plegamiento' | 'truncamiento'
     collision: str  # 'secuencial' | 'doble' | 'cuadrado' | 'anidados' | 'encadenamiento'
     table: List[Any] = field(default_factory=list)
+    trunc_positions: Optional[List[int]] = None
+    folding_op: Optional[str] = None  # 'suma' or 'multiplicacion'
 
     def __post_init__(self):
         if not isinstance(self.capacity, int) or self.capacity <= 0:
@@ -54,6 +56,13 @@ class HashStructure:
             # Normalize table length
             if len(self.table) != self.capacity:
                 raise ValueError("La tabla cargada no coincide con la capacidad")
+
+        # Default folding_op
+        if self.hash_func == "plegamiento":
+            if self.folding_op is None:
+                self.folding_op = "suma"
+            if self.folding_op not in ("suma", "multiplicacion"):
+                raise ValueError("Operación de plegamiento inválida")
 
     @property
     def size(self) -> int:
@@ -86,17 +95,41 @@ class HashStructure:
         return value % self.capacity
 
     def _h_folding(self, value: int) -> int:
+        # chunk size determined by digits needed for index
         n = len(str(self.capacity - 1))
-        s = str(abs(value)).zfill(n)
-        total = 0
-        for i in range(0, len(s), n):
-            total += int(s[i:i + n])
+        if n == 0:
+            n = 1
+        s = str(abs(value))
+        pad = (-len(s)) % n
+        if pad:
+            s = s.zfill(len(s) + pad)
+
+        if self.folding_op == "multiplicacion":
+            total = 1
+            for i in range(0, len(s), n):
+                total *= int(s[i:i + n])
+        else:
+            total = 0
+            for i in range(0, len(s), n):
+                total += int(s[i:i + n])
+
         return total % self.capacity
 
     def _h_truncate(self, value: int) -> int:
-        n = len(str(self.capacity - 1))
-        s = str(abs(value)).zfill(n)
-        return int(s[-n:]) % self.capacity
+        s = str(abs(value)).zfill(self.key_length)
+        # If trunc_positions provided, pick those indices (0-based left->right)
+        if self.trunc_positions:
+            try:
+                selected = ''.join(s[pos] for pos in self.trunc_positions)
+            except Exception:
+                raise ValueError("Posiciones de truncamiento inválidas")
+            return int(selected) % self.capacity
+
+        # Default: take last m digits where m = digits for capacity-1
+        m = len(str(self.capacity - 1))
+        if m == 0:
+            m = 1
+        return int(s[-m:]) % self.capacity
 
     def _hash(self, value: int) -> int:
         if self.hash_func == "cuadrado":
@@ -131,13 +164,13 @@ class HashStructure:
         if self.collision == "anidados":
             bucket = self.table[h]
             if isinstance(bucket, list) and value in bucket:
-                return h
+                return h + 1
             return -1
         if self.collision == "encadenamiento":
             node = self.table[h]
             while isinstance(node, Node):
                 if node.value == value:
-                    return h
+                    return h + 1
                 node = node.next
             return -1
         for i in range(self.capacity):
@@ -146,7 +179,7 @@ class HashStructure:
             if slot is None:
                 return -1
             if isinstance(slot, int) and slot == value:
-                return idx
+                return idx + 1
         return -1
 
     def insert(self, value: int) -> Tuple[int, Optional[int], int]:
@@ -164,9 +197,9 @@ class HashStructure:
             if not isinstance(bucket, list):
                 bucket = []
                 self.table[h] = bucket
-            first_collision_index = h if len(bucket) > 0 else None
+            first_collision_index = (h if len(bucket) > 0 else None)
             bucket.append(value)
-            return h, first_collision_index, 1
+            return h + 1, (first_collision_index + 1) if first_collision_index is not None else None, 1
 
         if self.collision == "encadenamiento":
             head = self.table[h]
@@ -176,10 +209,10 @@ class HashStructure:
                 while isinstance(node.next, Node):
                     node = node.next
                 node.next = Node(value)
-                return h, h, 1
+                return h + 1, h + 1, 1
             else:
                 self.table[h] = Node(value)
-                return h, None, 1
+                return h + 1, None, 1
 
         first_collision_index: Optional[int] = None
         for i in range(self.capacity):
@@ -188,7 +221,7 @@ class HashStructure:
             if slot is None or slot is TOMBSTONE:
                 self.table[idx] = value
                 attempts = i + 1
-                return idx, first_collision_index, attempts
+                return idx + 1, (first_collision_index + 1) if first_collision_index is not None else None, attempts
             if first_collision_index is None:
                 first_collision_index = idx
         raise ValueError("No se encontró espacio libre (tabla llena)")
@@ -197,8 +230,9 @@ class HashStructure:
         idx = self.find(value)
         if idx == -1:
             raise ValueError("La clave no existe")
+        real_idx = idx - 1
         if self.collision == "anidados":
-            bucket = self.table[idx]
+            bucket = self.table[real_idx]
             if isinstance(bucket, list):
                 try:
                     bucket.remove(value)
@@ -207,17 +241,17 @@ class HashStructure:
             return idx
         if self.collision == "encadenamiento":
             prev: Optional[Node] = None
-            node = self.table[idx]
+            node = self.table[real_idx]
             while isinstance(node, Node):
                 if node.value == value:
                     if prev is None:
-                        self.table[idx] = node.next
+                        self.table[real_idx] = node.next
                     else:
                         prev.next = node.next
                     return idx
                 prev, node = node, node.next
             return idx
-        self.table[idx] = TOMBSTONE
+        self.table[real_idx] = TOMBSTONE
         return idx
 
     # Random generation avoiding duplicates
@@ -272,6 +306,8 @@ class HashStructure:
             "longitud_clave": int(self.key_length),
             "hash_func": self.hash_func,
             "colision": self.collision,
+            "trunc_positions": self.trunc_positions,
+            "folding_op": self.folding_op,
             "datos": datos,
         }
 
@@ -305,7 +341,9 @@ class HashStructure:
                         table_ai.append(bucket)
                     else:
                         raise ValueError("Elemento de datos invǭlido en archivo")
-                return HashStructure(capacidad, klen, hname, cname, table_ai)
+                return HashStructure(capacidad, klen, hname, cname, table_ai,
+                                     trunc_positions=data.get("trunc_positions"),
+                                     folding_op=data.get("folding_op"))
             else:
                 table_ch: List[Optional[Node]] = []
                 for x in datos:
@@ -320,7 +358,9 @@ class HashStructure:
                         table_ch.append(head)
                     else:
                         raise ValueError("Elemento de datos invǭlido en archivo")
-                return HashStructure(capacidad, klen, hname, cname, table_ch)
+                return HashStructure(capacidad, klen, hname, cname, table_ch,
+                                     trunc_positions=data.get("trunc_positions"),
+                                     folding_op=data.get("folding_op"))
         if not isinstance(capacidad, int) or capacidad <= 0:
             raise ValueError("Capacidad inválida en archivo")
         if capacidad > 10000 or not _is_power_of_10(capacidad):
@@ -345,7 +385,9 @@ class HashStructure:
                 table[i] = x
             else:
                 raise ValueError("Elemento de datos inválido en archivo")
-        return HashStructure(capacidad, klen, hname, cname, table)
+        return HashStructure(capacidad, klen, hname, cname, table,
+                     trunc_positions=data.get("trunc_positions"),
+                     folding_op=data.get("folding_op"))
 
     # Utilidad para visualizacin/preview
     def bucket_items(self, index: int) -> List[int]:

@@ -42,6 +42,16 @@ class ExternalDynamicContent(BaseContent):
         self.entry_dore = ctk.CTkEntry(top_frame, width=80)
         self.entry_dore.grid(row=cfg_row, column=7, padx=4, pady=6)
 
+        # Expansion type: Total or Parcial
+        ctk.CTkLabel(top_frame, text="Tipo expansión:").grid(row=cfg_row, column=8, padx=(12,4), pady=6, sticky='w')
+        self.expansion_type_var = tk.StringVar(value='Total')
+        self.expansion_type_menu = ctk.CTkOptionMenu(top_frame, values=['Total', 'Parcial'], variable=self.expansion_type_var)
+        self.expansion_type_menu.grid(row=cfg_row, column=9, padx=4, pady=6)
+
+        # Defaults for DO fields
+        self.entry_do.insert(0, '75')
+        self.entry_dore.insert(0, '85')
+
         self.init_btn = ctk.CTkButton(top_frame, text="Inicializar", command=self.on_init)
         self.init_btn.grid(row=cfg_row, column=8, padx=(12,8), pady=6)
 
@@ -72,6 +82,9 @@ class ExternalDynamicContent(BaseContent):
         # Status line below the top frame
         self.status = ctk.CTkLabel(self.body, text="", anchor='w', justify='left')
         self.status.grid(row=2, column=0, sticky='ew', padx=12, pady=(0,6))
+        # DO current label
+        self.do_label = ctk.CTkLabel(self.body, text="DO actual: -", anchor='e')
+        self.do_label.grid(row=2, column=0, sticky='e', padx=12, pady=(0,6))
 
         # Viewer area using a scrollable canvas (similar to other external views)
         viewer_frame = ctk.CTkFrame(self.body)
@@ -172,13 +185,27 @@ class ExternalDynamicContent(BaseContent):
         except Exception:
             self.status.configure(text='Ingrese valores numéricos válidos')
             return
-        if not (70 <= do <= 90 and 70 <= dore <= 90):
-            self.status.configure(text='DO y DOreduccion deben estar entre 70 y 90')
+        # Validate DO ranges per spec
+        if not (65 <= do <= 85):
+            self.status.configure(text='DO de expansión debe estar entre 65 y 85')
             return
+        if not (85 <= dore <= 110):
+            self.status.configure(text='DO de reducción debe estar entre 85 y 110')
+            return
+        if dore <= do:
+            self.status.configure(text='DO de reducción debe ser mayor que DO de expansión')
+            return
+
+        # If partial expansion selected, require initial columns to be even
+        if self.expansion_type_var.get() == 'Parcial' and (cols % 2 != 0):
+            self.status.configure(text='Para expansión parcial, el número inicial de cubetas debe ser par')
+            return
+
         try:
             self.arr = DynamicTotalArray(columns=cols, records=rec, do_threshold=do, do_reduction_threshold=dore)
             self.status.configure(text=f'Estructura inicializada: {cols}x{rec}, DO={do}%, DOred={dore}%')
             self._draw()
+            self._update_do_display()
         except Exception as e:
             self.status.configure(text=str(e))
 
@@ -192,10 +219,15 @@ class ExternalDynamicContent(BaseContent):
 
         def _on_accept():
             try:
-                res = self.arr.expand()
+                # choose expansion type
+                if self.expansion_type_var.get() == 'Parcial':
+                    res = self.arr.expand_partial()
+                else:
+                    res = self.arr.expand()
                 self.status.configure(text=f"Estructura expandida: {res['columns']} columnas")
                 top.destroy()
                 self._draw()
+                self._update_do_display()
             except Exception as e:
                 self.status.configure(text=f"Error al expandir: {e}")
                 top.destroy()
@@ -221,6 +253,11 @@ class ExternalDynamicContent(BaseContent):
             return
         try:
             res = self.arr.insert(key)
+            # update DO display
+            try:
+                self._update_do_display()
+            except Exception:
+                pass
             if res.get('collision'):
                 # collision: not part of structure until expansion
                 col = key % (self.arr.columns if self.arr and self.arr.columns > 0 else 1)
@@ -245,12 +282,21 @@ class ExternalDynamicContent(BaseContent):
             # if expansion is needed, prompt user to confirm (after drawing)
             if res.get('expansion_needed'):
                 try:
-                    self._prompt_expansion(self.arr.columns * 2)
+                    # compute preview columns depending on expansion type
+                    if self.expansion_type_var.get() == 'Parcial':
+                        preview = self.arr.columns + max(1, self.arr.columns // 2)
+                    else:
+                        preview = self.arr.columns * 2
+                    self._prompt_expansion(preview)
                 except Exception:
                     # fallback: immediately expand
-                    e_res = self.arr.expand()
+                    if self.expansion_type_var.get() == 'Parcial':
+                        e_res = self.arr.expand_partial()
+                    else:
+                        e_res = self.arr.expand()
                     self.status.configure(text=f"EXPANDIDO a {e_res['columns']} columnas")
                     self._draw()
+                    self._update_do_display()
         except Exception as e:
             self.status.configure(text=str(e))
 
@@ -265,15 +311,51 @@ class ExternalDynamicContent(BaseContent):
             return
         try:
             res = self.arr.delete(key)
-            msg = f"Eliminado {key}. DOred={res['do_reduction']:.2f}%"
-            if res.get('reduced'):
-                msg += f" — REDUCCIÓN: nuevas columnas={res['columns']}"
-            self.status.configure(text=msg)
             try:
                 self.key_entry.delete(0, 'end')
             except Exception:
                 pass
-            self._draw()
+            # If reduction should occur, prompt user before reducing
+            if res.get('should_reduce'):
+                top = ctk.CTkToplevel(self)
+                top.title("Reducción de estructura")
+                top.geometry("420x120")
+                msg = ctk.CTkLabel(top, text=f"La estructura tiene baja ocupación (DO={res.get('do'):.2f}%).\n¿Desea reducir a la mitad las columnas?", wraplength=380)
+                msg.pack(padx=12, pady=(12, 8))
+
+                def _on_accept_reduce():
+                    try:
+                        rres = self.arr.reduce()
+                        self.status.configure(text=f"Estructura reducida: {rres['columns']} columnas")
+                        top.destroy()
+                        self._draw()
+                        self._update_do_display()
+                    except Exception as e:
+                        self.status.configure(text=f"Error al reducir: {e}")
+                        top.destroy()
+
+                def _on_cancel_reduce():
+                    # user declined reduction; just update status and DO
+                    self.status.configure(text=f"Eliminado {key}. Reducción cancelada. DO={res.get('do'):.2f}%")
+                    try:
+                        top.destroy()
+                    except Exception:
+                        pass
+                    self._update_do_display()
+
+                btn_accept = ctk.CTkButton(top, text="Aceptar", command=_on_accept_reduce)
+                btn_accept.pack(side='right', padx=12, pady=12)
+                btn_cancel = ctk.CTkButton(top, text="Cancelar", command=_on_cancel_reduce)
+                btn_cancel.pack(side='right', padx=12, pady=12)
+                try:
+                    top.transient(self)
+                    top.grab_set()
+                    self.wait_window(top)
+                except Exception:
+                    pass
+            else:
+                self.status.configure(text=f"Eliminado {key}. DO={res.get('do'):.2f}%")
+                self._update_do_display()
         except Exception as e:
             self.status.configure(text=str(e))
 
@@ -301,6 +383,16 @@ class ExternalDynamicContent(BaseContent):
             self._draw()
         except Exception as e:
             self.status.configure(text=str(e))
+
+    def _update_do_display(self):
+        try:
+            if not self.arr:
+                self.do_label.configure(text="DO actual: -")
+                return
+            do = self.arr.current_do()
+            self.do_label.configure(text=f"DO actual: {do:.2f}%")
+        except Exception:
+            pass
 
     def on_save(self):
         if not self.arr:
