@@ -76,8 +76,9 @@ class GraphTheoryContent(ctk.CTkFrame):
             controls,
             text="➕ Agregar Vértice",
             command=self.add_vertex,
-            fg_color="#2ecc71",
-            hover_color="#27ae60"
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkLabel(controls, text="Eliminar:", anchor="w").pack(fill="x", padx=10, pady=(10, 0))
@@ -93,7 +94,8 @@ class GraphTheoryContent(ctk.CTkFrame):
             text="🗑️ Eliminar Vértice",
             command=self.remove_vertex,
             fg_color="#e74c3c",
-            hover_color="#c0392b"
+            hover_color="#c0392b",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
         # ===== ARISTAS =====
@@ -133,7 +135,8 @@ class GraphTheoryContent(ctk.CTkFrame):
             text="➕ Agregar Arista",
             command=self.add_edge,
             fg_color="#3498db",
-            hover_color="#2980b9"
+            hover_color="#2980b9",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkLabel(controls, text="Eliminar:", anchor="w").pack(fill="x", padx=10, pady=(10, 0))
@@ -149,7 +152,8 @@ class GraphTheoryContent(ctk.CTkFrame):
             text="🗑️ Eliminar Arista",
             command=self.remove_edge,
             fg_color="#e74c3c",
-            hover_color="#c0392b"
+            hover_color="#c0392b",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
         # ===== MATRICES =====
@@ -159,8 +163,9 @@ class GraphTheoryContent(ctk.CTkFrame):
             controls,
             text="Matriz de Incidencia (V-A)",
             command=self.show_vertex_incidence,
-            fg_color="#16a085",
-            hover_color="#138f7a"
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
@@ -168,7 +173,8 @@ class GraphTheoryContent(ctk.CTkFrame):
             text="Matriz de Adyacencia (V)",
             command=self.show_vertex_adjacency,
             fg_color="#3498db",
-            hover_color="#2980b9"
+            hover_color="#2980b9",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
@@ -176,7 +182,8 @@ class GraphTheoryContent(ctk.CTkFrame):
             text="Matriz de Adyacencia (A)",
             command=self.show_edge_adjacency,
             fg_color="#3498db",
-            hover_color="#2980b9"
+            hover_color="#2980b9",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
         # ===== MATRICES AVANZADAS =====
@@ -186,32 +193,48 @@ class GraphTheoryContent(ctk.CTkFrame):
             controls,
             text="Todos los Circuitos",
             command=self.show_all_circuits_matrix,
-            fg_color="#9b59b6",
-            hover_color="#8e44ad"
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
             controls,
             text="Circuitos Fundamentales",
             command=self.show_circuit_matrix,
-            fg_color="#9b59b6",
-            hover_color="#8e44ad"
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
             controls,
             text="Todos los Conjuntos de Corte",
             command=self.show_all_cut_sets_matrix,
-            fg_color="#e67e22",
-            hover_color="#d35400"
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
             controls,
             text="Conjuntos de Corte Fundamentales",
             command=self.show_fundamental_cut_matrix,
-            fg_color="#e67e22",
-            hover_color="#d35400"
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="#000000"
+        ).pack(fill="x", padx=10, pady=5)
+
+        # ===== INFORMACIÓN =====
+        self.create_section(controls, "ℹ️ Información")
+
+        ctk.CTkButton(
+            controls,
+            text="📋 Ver Información del Grafo",
+            command=self.show_graph_info,
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
         # ===== UTILIDADES =====
@@ -222,7 +245,8 @@ class GraphTheoryContent(ctk.CTkFrame):
             text="💾 Guardar Grafo",
             command=self.save_graph,
             fg_color="#95a5a6",
-            hover_color="#7f8c8d"
+            hover_color="#7f8c8d",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
@@ -230,15 +254,17 @@ class GraphTheoryContent(ctk.CTkFrame):
             text="📂 Cargar Grafo",
             command=self.load_graph,
             fg_color="#95a5a6",
-            hover_color="#7f8c8d"
+            hover_color="#7f8c8d",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
             controls,
             text="🗑️ Limpiar Todo",
             command=self.clear_all,
-            fg_color="#c0392b",
-            hover_color="#a93226"
+            fg_color="#e74c3c",
+            hover_color="#c0392b",
+            text_color="#000000"
         ).pack(fill="x", padx=10, pady=5)
 
     def create_visualization_panel(self):
@@ -770,6 +796,78 @@ class GraphTheoryContent(ctk.CTkFrame):
         """Muestra mensaje de estado"""
         self.viz_title.configure(text=f"📊 {message}")
         self.after(3000, lambda: self.viz_title.configure(text="📊 Grafo"))
+
+    # ==================== INFORMACIÓN ====================
+
+    def show_graph_info(self):
+        """Muestra información del grafo actual"""
+        if len(self.graph.vertices) == 0:
+            messagebox.showinfo("Información", "El grafo está vacío")
+            return
+
+        graph_type = "Dirigido" if self.graph.is_directed else "No dirigido"
+        weights_status = "Con pesos" if self.graph.has_weights else "Sin pesos"
+
+        vertices_list = sorted(list(self.graph.vertices))
+        edges_list = sorted(list(self.graph.edges.keys()))
+
+        # Calcular información adicional
+        is_connected = self.graph.is_connected()
+
+        info_text = f"""
+╔════════════════════════════════════════╗
+║     INFORMACIÓN DEL GRAFO              ║
+╚════════════════════════════════════════╝
+
+📊 PROPIEDADES BÁSICAS:
+  • Tipo: {graph_type}
+  • Pesos: {weights_status}
+  • Conexo: {"Sí" if is_connected else "No"}
+
+📈 ESTADÍSTICAS:
+  • Vértices: {len(self.graph.vertices)}
+  • Aristas: {len(self.graph.edges)}
+
+📍 VÉRTICES ({len(vertices_list)}):
+{chr(10).join(f"    {i+1}. {v}" for i, v in enumerate(vertices_list))}
+
+🔗 ARISTAS ({len(edges_list)}):
+"""
+        for i, edge_name in enumerate(edges_list, 1):
+            edge_data = self.graph.edges[edge_name]
+            v1, v2 = edge_data[0], edge_data[1]
+            weight = edge_data[2] if len(edge_data) > 2 else 1.0
+
+            if self.graph.is_directed:
+                edge_str = f"{v1} → {v2}"
+            else:
+                edge_str = f"{v1} — {v2}"
+
+            if self.graph.has_weights:
+                info_text += f"    {i}. {edge_name}: {edge_str} (peso: {weight})\n"
+            else:
+                info_text += f"    {i}. {edge_name}: {edge_str}\n"
+
+        info_text += "\n"
+
+        # Crear ventana de información
+        info_window = ctk.CTkToplevel(self)
+        info_window.title("Información del Grafo")
+        info_window.geometry("600x700")
+
+        # Frame con scrollbar
+        frame = ctk.CTkScrollableFrame(info_window, fg_color="transparent")
+        frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Mostrar texto
+        text_label = ctk.CTkLabel(
+            frame,
+            text=info_text,
+            justify="left",
+            font=("Consolas", 10),
+            text_color="#000000"
+        )
+        text_label.pack(fill="both", expand=True, padx=10, pady=10)
 
     # ==================== PERSISTENCIA ====================
 
