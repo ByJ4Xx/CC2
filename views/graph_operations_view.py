@@ -867,10 +867,22 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
                 edge_labels[(vertices[0], vertices[1])] = edge.name
 
         # Usar posiciones guardadas o generar nuevas
+        # Validar que todas las posiciones existan para todos los vértices
         if graph.number in self.graph_positions:
-            pos = self.graph_positions[graph.number]
+            saved_pos = self.graph_positions[graph.number]
+            # Si el número de vértices cambió, regenerar posiciones preservando las existentes
+            if len(saved_pos) == len(G.nodes()):
+                pos = saved_pos
+            else:
+                # Generar nuevas posiciones pero mantener los vértices existentes si es posible
+                pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
+                # Intentar preservar posiciones de vértices existentes
+                for node in saved_pos:
+                    if node in pos:
+                        pos[node] = saved_pos[node]
+                self.graph_positions[graph.number] = pos
         else:
-            pos = nx.spring_layout(G, k=2, iterations=50)
+            pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
             self.graph_positions[graph.number] = pos
 
         # Dibujar
@@ -909,6 +921,18 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
             fontsize=14,
             fontweight='bold'
         )
+
+        # Configurar límites de los ejes para que todos los nodos sean visibles
+        if pos:
+            x_coords = [p[0] for p in pos.values()]
+            y_coords = [p[1] for p in pos.values()]
+            margin = 0.2
+            x_margin = (max(x_coords) - min(x_coords)) * margin if x_coords else 0.5
+            y_margin = (max(y_coords) - min(y_coords)) * margin if y_coords else 0.5
+
+            self.ax.set_xlim(min(x_coords) - x_margin if x_coords else -1, max(x_coords) + x_margin if x_coords else 1)
+            self.ax.set_ylim(min(y_coords) - y_margin if y_coords else -1, max(y_coords) + y_margin if y_coords else 1)
+
         self.ax.axis('off')
 
         self.canvas.draw()
