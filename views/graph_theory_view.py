@@ -30,7 +30,7 @@ class GraphTheoryContent(ctk.CTkFrame):
 
     def setup_ui(self):
         """Configura la interfaz de usuario"""
-        self.grid_columnconfigure(0, weight=0, minsize=250)
+        self.grid_columnconfigure(0, weight=0, minsize=280)
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
@@ -45,11 +45,31 @@ class GraphTheoryContent(ctk.CTkFrame):
         controls = ctk.CTkScrollableFrame(self, corner_radius=10)
         controls.grid(row=0, column=0, sticky="nsew", padx=(0, 10), pady=0)
 
-        # ===== CONSTRUCCIÓN DEL GRAFO =====
-        self.create_section(controls, "🔨 Datos del Grafo")
+        # ===== CONFIGURACIÓN DEL GRAFO =====
+        self.create_section(controls, "⚙️ Propiedades del Grafo")
 
-        ctk.CTkLabel(controls, text="Vértice:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
-        self.vertex_entry = ctk.CTkEntry(controls, placeholder_text="Nombre del vértice")
+        ctk.CTkLabel(controls, text="Tipo de Grafo:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
+        self.directed_var = ctk.BooleanVar(value=False)
+        ctk.CTkCheckBox(
+            controls,
+            text="Dirigido",
+            variable=self.directed_var,
+            command=self.toggle_directed
+        ).pack(fill="x", padx=10, pady=5)
+
+        self.weights_var = ctk.BooleanVar(value=False)
+        ctk.CTkCheckBox(
+            controls,
+            text="Con Pesos",
+            variable=self.weights_var,
+            command=self.toggle_weights
+        ).pack(fill="x", padx=10, pady=5)
+
+        # ===== CONSTRUCCIÓN DEL GRAFO =====
+        self.create_section(controls, "🔨 Vértices")
+
+        ctk.CTkLabel(controls, text="Nombre:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
+        self.vertex_entry = ctk.CTkEntry(controls, placeholder_text="Ej: A, B, 1, 2...")
         self.vertex_entry.pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
@@ -60,29 +80,53 @@ class GraphTheoryContent(ctk.CTkFrame):
             hover_color="#27ae60"
         ).pack(fill="x", padx=10, pady=5)
 
-        ctk.CTkLabel(controls, text="Arista:", anchor="w").pack(fill="x", padx=10, pady=(10, 0))
-        self.edge_name_entry = ctk.CTkEntry(controls, placeholder_text="Nombre (ej: e1)")
+        ctk.CTkLabel(controls, text="Eliminar:", anchor="w").pack(fill="x", padx=10, pady=(10, 0))
+        self.vertex_combo = ctk.CTkComboBox(
+            controls,
+            values=[],
+            state="readonly"
+        )
+        self.vertex_combo.pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="🗑️ Eliminar Vértice",
+            command=self.remove_vertex,
+            fg_color="#e74c3c",
+            hover_color="#c0392b"
+        ).pack(fill="x", padx=10, pady=5)
+
+        # ===== ARISTAS =====
+        self.create_section(controls, "🔗 Aristas")
+
+        ctk.CTkLabel(controls, text="Nombre:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
+        self.edge_name_entry = ctk.CTkEntry(controls, placeholder_text="Ej: e1, e2...")
         self.edge_name_entry.pack(fill="x", padx=10, pady=5)
 
-        # Lista desplegable para Vértice 1
         ctk.CTkLabel(controls, text="Vértice 1:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
         self.edge_v1_var = ctk.StringVar(value="")
         self.edge_v1_combo = ctk.CTkComboBox(
             controls,
             variable=self.edge_v1_var,
-            values=[]
+            values=[],
+            state="readonly"
         )
         self.edge_v1_combo.pack(fill="x", padx=10, pady=5)
 
-        # Lista desplegable para Vértice 2
         ctk.CTkLabel(controls, text="Vértice 2:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
         self.edge_v2_var = ctk.StringVar(value="")
         self.edge_v2_combo = ctk.CTkComboBox(
             controls,
             variable=self.edge_v2_var,
-            values=[]
+            values=[],
+            state="readonly"
         )
         self.edge_v2_combo.pack(fill="x", padx=10, pady=5)
+
+        # Peso (si está habilitado)
+        ctk.CTkLabel(controls, text="Peso:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
+        self.weight_entry = ctk.CTkEntry(controls, placeholder_text="1.0")
+        self.weight_entry.pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
             controls,
@@ -92,10 +136,25 @@ class GraphTheoryContent(ctk.CTkFrame):
             hover_color="#2980b9"
         ).pack(fill="x", padx=10, pady=5)
 
+        ctk.CTkLabel(controls, text="Eliminar:", anchor="w").pack(fill="x", padx=10, pady=(10, 0))
+        self.edge_combo = ctk.CTkComboBox(
+            controls,
+            values=[],
+            state="readonly"
+        )
+        self.edge_combo.pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="🗑️ Eliminar Arista",
+            command=self.remove_edge,
+            fg_color="#e74c3c",
+            hover_color="#c0392b"
+        ).pack(fill="x", padx=10, pady=5)
+
         # ===== MATRICES =====
         self.create_section(controls, "📊 Matrices Fundamentales")
 
-        # Matriz de Incidencia
         ctk.CTkButton(
             controls,
             text="Matriz de Incidencia (V-A)",
@@ -106,18 +165,7 @@ class GraphTheoryContent(ctk.CTkFrame):
 
         ctk.CTkButton(
             controls,
-            text="Matriz de Incidencia (A-V)",
-            command=self.show_edge_incidence,
-            fg_color="#16a085",
-            hover_color="#138f7a"
-        ).pack(fill="x", padx=10, pady=5)
-
-        # Matriz de Adyacencia
-        self.create_section(controls, "🔗 Matriz de Adyacencia")
-
-        ctk.CTkButton(
-            controls,
-            text="Vértices",
+            text="Matriz de Adyacencia (V)",
             command=self.show_vertex_adjacency,
             fg_color="#3498db",
             hover_color="#2980b9"
@@ -125,38 +173,19 @@ class GraphTheoryContent(ctk.CTkFrame):
 
         ctk.CTkButton(
             controls,
-            text="Aristas",
+            text="Matriz de Adyacencia (A)",
             command=self.show_edge_adjacency,
             fg_color="#3498db",
             hover_color="#2980b9"
         ).pack(fill="x", padx=10, pady=5)
 
-        # Matriz de Conjuntos de Corte
-        self.create_section(controls, "✂️ Matriz de Conjuntos de Corte")
+        # ===== MATRICES AVANZADAS =====
+        self.create_section(controls, "🔄 Circuitos y Cortes")
 
         ctk.CTkButton(
             controls,
-            text="Conjuntos de Corte",
-            command=self.find_cut_sets,
-            fg_color="#e67e22",
-            hover_color="#d35400"
-        ).pack(fill="x", padx=10, pady=5)
-
-        ctk.CTkButton(
-            controls,
-            text="Conjuntos de Corte Fundamentales",
-            command=self.find_fundamental_cuts,
-            fg_color="#e67e22",
-            hover_color="#d35400"
-        ).pack(fill="x", padx=10, pady=5)
-
-        # Matriz de Circuitos
-        self.create_section(controls, "🔄 Matriz de Circuitos")
-
-        ctk.CTkButton(
-            controls,
-            text="Encontrar Circuitos",
-            command=self.find_circuits,
+            text="Todos los Circuitos",
+            command=self.show_all_circuits_matrix,
             fg_color="#9b59b6",
             hover_color="#8e44ad"
         ).pack(fill="x", padx=10, pady=5)
@@ -164,9 +193,25 @@ class GraphTheoryContent(ctk.CTkFrame):
         ctk.CTkButton(
             controls,
             text="Circuitos Fundamentales",
-            command=self.find_fundamental_cycles,
+            command=self.show_circuit_matrix,
             fg_color="#9b59b6",
             hover_color="#8e44ad"
+        ).pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="Todos los Conjuntos de Corte",
+            command=self.show_all_cut_sets_matrix,
+            fg_color="#e67e22",
+            hover_color="#d35400"
+        ).pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="Conjuntos de Corte Fundamentales",
+            command=self.show_fundamental_cut_matrix,
+            fg_color="#e67e22",
+            hover_color="#d35400"
         ).pack(fill="x", padx=10, pady=5)
 
         # ===== UTILIDADES =====
@@ -192,8 +237,8 @@ class GraphTheoryContent(ctk.CTkFrame):
             controls,
             text="🗑️ Limpiar Todo",
             command=self.clear_all,
-            fg_color="#e74c3c",
-            hover_color="#c0392b"
+            fg_color="#c0392b",
+            hover_color="#a93226"
         ).pack(fill="x", padx=10, pady=5)
 
     def create_visualization_panel(self):
@@ -241,6 +286,18 @@ class GraphTheoryContent(ctk.CTkFrame):
         )
         label.pack(fill="x", padx=10, pady=(15, 5))
 
+    # ==================== PROPIEDADES DEL GRAFO ====================
+
+    def toggle_directed(self):
+        """Cambia si el grafo es dirigido o no"""
+        self.graph.is_directed = self.directed_var.get()
+        self.draw_graph()
+
+    def toggle_weights(self):
+        """Cambia si el grafo tiene pesos"""
+        self.graph.has_weights = self.weights_var.get()
+        self.weight_entry.configure(state="normal" if self.weights_var.get() else "disabled")
+
     # ==================== CONSTRUCCIÓN ====================
 
     def add_vertex(self):
@@ -257,13 +314,21 @@ class GraphTheoryContent(ctk.CTkFrame):
         self.graph.add_vertex(vertex)
         self.vertex_entry.delete(0, 'end')
 
-        # Actualizar las listas desplegables de vértices
-        vertices_list = sorted(list(self.graph.vertices))
-        self.edge_v1_combo.configure(values=vertices_list)
-        self.edge_v2_combo.configure(values=vertices_list)
-
+        self.update_comboboxes()
         self.draw_graph()
         self.show_status(f"✓ Vértice '{vertex}' agregado")
+
+    def remove_vertex(self):
+        """Elimina un vértice"""
+        vertex = self.vertex_combo.get()
+        if not vertex:
+            messagebox.showwarning("Advertencia", "Selecciona un vértice")
+            return
+
+        if self.graph.remove_vertex(vertex):
+            self.update_comboboxes()
+            self.draw_graph()
+            self.show_status(f"✓ Vértice '{vertex}' eliminado")
 
     def add_edge(self):
         """Agrega una arista al grafo"""
@@ -272,123 +337,54 @@ class GraphTheoryContent(ctk.CTkFrame):
         v2 = self.edge_v2_var.get().strip()
 
         if not edge_name or not v1 or not v2:
-            messagebox.showwarning("Advertencia", "Completa todos los campos")
+            messagebox.showwarning("Advertencia", "Completa todos los campos obligatorios")
             return
 
         if edge_name in self.graph.edges:
             messagebox.showwarning("Advertencia", f"La arista '{edge_name}' ya existe")
             return
 
-        if not self.graph.add_edge(edge_name, v1, v2):
+        weight = None
+        if self.weights_var.get():
+            try:
+                weight = float(self.weight_entry.get() or "1.0")
+            except ValueError:
+                messagebox.showerror("Error", "El peso debe ser un número")
+                return
+
+        if not self.graph.add_edge(edge_name, v1, v2, weight):
             messagebox.showerror("Error", "Verifica que los vértices existan")
             return
 
         self.edge_name_entry.delete(0, 'end')
+        self.weight_entry.delete(0, 'end')
         self.edge_v1_var.set("")
         self.edge_v2_var.set("")
+        self.update_comboboxes()
         self.draw_graph()
         self.show_status(f"✓ Arista '{edge_name}' agregada")
 
-    # ==================== CIRCUITOS ====================
-
-    def find_circuits(self):
-        """Encuentra todos los circuitos del grafo"""
-        if len(self.graph.vertices) == 0:
-            messagebox.showwarning("Advertencia", "El grafo está vacío")
+    def remove_edge(self):
+        """Elimina una arista"""
+        edge = self.edge_combo.get()
+        if not edge:
+            messagebox.showwarning("Advertencia", "Selecciona una arista")
             return
 
-        circuits = self.graph.find_circuits()
+        if self.graph.remove_edge(edge):
+            self.update_comboboxes()
+            self.draw_graph()
+            self.show_status(f"✓ Arista '{edge}' eliminada")
 
-        if len(circuits) == 0:
-            result = "No se encontraron circuitos (el grafo es acíclico o un árbol)\n"
-        else:
-            result = f"CIRCUITOS ENCONTRADOS: {len(circuits)}\n\n"
-            for circuit in circuits:
-                result += f"Circuito {circuit['id']}:\n"
-                result += f"  Vértices: {' → '.join(circuit['vertices'])} → {circuit['vertices'][0]}\n"
-                result += f"  Aristas: {', '.join(circuit['edges'])}\n"
-                result += f"  Longitud: {circuit['length']}\n\n"
+    def update_comboboxes(self):
+        """Actualiza los combobox con vértices y aristas"""
+        vertices_list = sorted(list(self.graph.vertices))
+        self.edge_v1_combo.configure(values=vertices_list)
+        self.edge_v2_combo.configure(values=vertices_list)
+        self.vertex_combo.configure(values=vertices_list)
 
-        self.show_results(result)
-        self.notebook.set("Resultados")
-
-    def find_fundamental_cycles(self):
-        """Encuentra circuitos fundamentales"""
-        if len(self.graph.vertices) == 0:
-            messagebox.showwarning("Advertencia", "El grafo está vacío")
-            return
-
-        if not self.graph.is_connected():
-            messagebox.showerror("Error", "El grafo debe ser conexo")
-            return
-
-        fundamental = self.graph.fundamental_cycles()
-
-        if len(fundamental) == 0:
-            result = "No se encontraron circuitos fundamentales\n"
-        else:
-            result = f"CIRCUITOS FUNDAMENTALES: {len(fundamental)}\n\n"
-            for i, cycle in enumerate(fundamental, 1):
-                result += f"Circuito Fundamental {i}:\n"
-                result += f"  Cuerda: {cycle['chord']}\n"
-                result += f"  Camino en árbol: {' → '.join(cycle['vertices'])}\n"
-                result += f"  Aristas del árbol: {', '.join(cycle['tree_edges'])}\n"
-                result += f"  Todas las aristas: {', '.join(cycle['all_edges'])}\n"
-                result += f"  Longitud: {cycle['length']}\n\n"
-
-        self.show_results(result)
-        self.notebook.set("Resultados")
-
-    # ==================== CONJUNTOS DE CORTE ====================
-
-    def find_cut_sets(self):
-        """Encuentra conjuntos de corte"""
-        if len(self.graph.vertices) == 0:
-            messagebox.showwarning("Advertencia", "El grafo está vacío")
-            return
-
-        cut_sets = self.graph.find_cut_sets()
-
-        if len(cut_sets) == 0:
-            result = "No se encontraron conjuntos de corte o el grafo no es conexo\n"
-        else:
-            result = f"CONJUNTOS DE CORTE: {len(cut_sets)}\n\n"
-            for i, cut in enumerate(cut_sets, 1):
-                result += f"Conjunto de Corte {i}:\n"
-                result += f"  Aristas: {', '.join(cut['edges'])}\n"
-                result += f"  Tamaño: {cut['size']}\n"
-                result += f"  Partición 1: {{{', '.join(cut['partitions'][0])}}}\n"
-                result += f"  Partición 2: {{{', '.join(cut['partitions'][1])}}}\n\n"
-
-        self.show_results(result)
-        self.notebook.set("Resultados")
-
-    def find_fundamental_cuts(self):
-        """Encuentra conjuntos de corte fundamentales"""
-        if len(self.graph.vertices) == 0:
-            messagebox.showwarning("Advertencia", "El grafo está vacío")
-            return
-
-        if not self.graph.is_connected():
-            messagebox.showerror("Error", "El grafo debe ser conexo")
-            return
-
-        fundamental_cuts = self.graph.fundamental_cut_sets()
-
-        if len(fundamental_cuts) == 0:
-            result = "No se encontraron conjuntos de corte fundamentales\n"
-        else:
-            result = f"CONJUNTOS DE CORTE FUNDAMENTALES: {len(fundamental_cuts)}\n\n"
-            for i, cut in enumerate(fundamental_cuts, 1):
-                result += f"Conjunto de Corte Fundamental {i}:\n"
-                result += f"  Arista del árbol: {cut['tree_edge']}\n"
-                result += f"  Todas las aristas del corte: {', '.join(cut['cut_edges'])}\n"
-                result += f"  Tamaño: {cut['size']}\n"
-                result += f"  Partición 1: {{{', '.join(cut['partitions'][0])}}}\n"
-                result += f"  Partición 2: {{{', '.join(cut['partitions'][1])}}}\n\n"
-
-        self.show_results(result)
-        self.notebook.set("Resultados")
+        edges_list = sorted(list(self.graph.edges.keys()))
+        self.edge_combo.configure(values=edges_list)
 
     # ==================== MATRICES ====================
 
@@ -399,23 +395,14 @@ class GraphTheoryContent(ctk.CTkFrame):
             return
 
         matrix, vertices = self.graph.vertex_adjacency_matrix()
-
-        result = "MATRIZ DE ADYACENCIA DE VÉRTICES\n\n"
-        result += "M[i][j] = número de aristas entre vértice i y vértice j\n\n"
-
-        # Encabezado
-        result += "     " + "  ".join(f"{v:>3}" for v in vertices) + "\n"
-        result += "   " + "-" * (4 * len(vertices) + 2) + "\n"
-
-        # Filas
-        for i, v in enumerate(vertices):
-            result += f"{v:>3} |"
-            for j in range(len(vertices)):
-                result += f"{matrix[i][j]:>3} "
-            result += "\n"
-
-        self.show_results(result)
-        self.notebook.set("Resultados")
+        self._show_matrix_window(
+            "Matriz de Adyacencia de Vértices",
+            matrix,
+            vertices,
+            vertices,
+            "📊 MATRIZ DE ADYACENCIA DE VÉRTICES",
+            "M[i][j] = número de aristas entre vértice i y vértice j"
+        )
 
     def show_edge_adjacency(self):
         """Muestra matriz de adyacencia de aristas"""
@@ -424,23 +411,14 @@ class GraphTheoryContent(ctk.CTkFrame):
             return
 
         matrix, edges = self.graph.edge_adjacency_matrix()
-
-        result = "MATRIZ DE ADYACENCIA DE ARISTAS\n\n"
-        result += "M[i][j] = 1 si las aristas comparten un vértice, 0 en caso contrario\n\n"
-
-        # Encabezado
-        result += "     " + "  ".join(f"{e:>3}" for e in edges) + "\n"
-        result += "   " + "-" * (4 * len(edges) + 2) + "\n"
-
-        # Filas
-        for i, e in enumerate(edges):
-            result += f"{e:>3} |"
-            for j in range(len(edges)):
-                result += f"{matrix[i][j]:>3} "
-            result += "\n"
-
-        self.show_results(result)
-        self.notebook.set("Resultados")
+        self._show_matrix_window(
+            "Matriz de Adyacencia de Aristas",
+            matrix,
+            edges,
+            edges,
+            "📊 MATRIZ DE ADYACENCIA DE ARISTAS",
+            "M[i][j] = 1 si las aristas comparten un vértice, 0 en caso contrario"
+        )
 
     def show_vertex_incidence(self):
         """Muestra matriz de incidencia vértice-arista"""
@@ -449,48 +427,265 @@ class GraphTheoryContent(ctk.CTkFrame):
             return
 
         matrix, vertices, edges = self.graph.vertex_incidence_matrix()
+        self._show_matrix_window(
+            "Matriz de Incidencia Vértice-Arista",
+            matrix,
+            vertices,
+            edges,
+            "📊 MATRIZ DE INCIDENCIA VÉRTICE-ARISTA",
+            "M[i][j] = 1 si el vértice i es incidente a la arista j"
+        )
 
-        result = "MATRIZ DE INCIDENCIA VÉRTICE-ARISTA\n\n"
-        result += "M[i][j] = 1 si el vértice i es incidente a la arista j\n\n"
+    def _show_matrix_window(self, title, matrix, row_labels, col_labels, header_title, header_desc):
+        """Muestra una matriz en una ventana"""
+        matrix_window = ctk.CTkToplevel(self)
+        matrix_window.title(title)
+        matrix_window.geometry("900x600")
 
-        # Encabezado
-        result += "     " + "  ".join(f"{e:>3}" for e in edges) + "\n"
-        result += "   " + "-" * (4 * len(edges) + 2) + "\n"
+        main_frame = ctk.CTkScrollableFrame(matrix_window, fg_color="transparent")
+        main_frame.pack(fill="both", expand=True, padx=0, pady=0)
+
+        # Título
+        title_frame = ctk.CTkFrame(main_frame, fg_color="#f0f0f0")
+        title_frame.pack(fill="x", padx=0, pady=0)
+
+        ctk.CTkLabel(
+            title_frame,
+            text=header_title,
+            font=("Segoe UI", 16, "bold"),
+            text_color="#000000"
+        ).pack(pady=10, padx=20)
+
+        ctk.CTkLabel(
+            title_frame,
+            text=header_desc,
+            font=("Segoe UI", 10),
+            text_color="#555555"
+        ).pack(pady=(0, 10), padx=20)
+
+        # Frame de tabla
+        table_frame = ctk.CTkFrame(main_frame, fg_color="white")
+        table_frame.pack(fill="both", expand=True, padx=20, pady=20)
+
+        n_cols = len(col_labels) + 1
+        for col in range(n_cols):
+            table_frame.grid_columnconfigure(col, minsize=60, weight=1)
+
+        # Encabezado de columnas
+        ctk.CTkLabel(table_frame, text="", font=("Segoe UI", 10, "bold"), text_color="#000000").grid(row=0, column=0, padx=5, pady=10)
+        for col, label in enumerate(col_labels):
+            ctk.CTkLabel(
+                table_frame,
+                text=label,
+                font=("Segoe UI", 10, "bold"),
+                text_color="#000000",
+                fg_color="#ffffff"
+            ).grid(row=0, column=col+1, padx=5, pady=10, sticky="ew")
 
         # Filas
-        for i, v in enumerate(vertices):
-            result += f"{v:>3} |"
-            for j in range(len(edges)):
-                result += f"{matrix[i][j]:>3} "
-            result += "\n"
+        for i, row_label in enumerate(row_labels):
+            ctk.CTkLabel(
+                table_frame,
+                text=row_label,
+                font=("Segoe UI", 10, "bold"),
+                text_color="#000000",
+                fg_color="#ffffff"
+            ).grid(row=i+1, column=0, padx=5, pady=10, sticky="ew")
 
-        self.show_results(result)
-        self.notebook.set("Resultados")
+            for j in range(len(col_labels)):
+                value = matrix[i][j]
+                bg_color = "#e8f4f8" if value != 0 else "white"
+                ctk.CTkLabel(
+                    table_frame,
+                    text=str(int(value)),
+                    font=("Segoe UI", 10),
+                    text_color="#000000",
+                    fg_color=bg_color
+                ).grid(row=i+1, column=j+1, padx=5, pady=10, sticky="ew")
 
-    def show_edge_incidence(self):
-        """Muestra matriz de incidencia arista-vértice"""
-        if len(self.graph.edges) == 0:
-            messagebox.showwarning("Advertencia", "El grafo no tiene aristas")
+    def show_all_circuits_matrix(self):
+        """Muestra matriz de todos los circuitos"""
+        if len(self.graph.vertices) == 0:
+            messagebox.showwarning("Advertencia", "El grafo está vacío")
             return
 
-        matrix, edges, vertices = self.graph.edge_incidence_matrix()
+        circuits = self.graph.find_circuits()
+        if not circuits:
+            messagebox.showinfo("Info", "No se encontraron circuitos")
+            return
 
-        result = "MATRIZ DE INCIDENCIA ARISTA-VÉRTICE\n\n"
-        result += "M[i][j] = 1 si la arista i es incidente al vértice j\n\n"
+        edges_list = sorted(list(self.graph.edges.keys()))
+        fundamental = self.graph.fundamental_cycles() if self.graph.is_connected() else []
+        fundamental_edges = {tuple(sorted(c.get("all_edges", []))) for c in fundamental}
 
-        # Encabezado
-        result += "     " + "  ".join(f"{v:>3}" for v in vertices) + "\n"
-        result += "   " + "-" * (4 * len(vertices) + 2) + "\n"
+        self._show_circuits_cut_sets_matrix(
+            "Matriz de Circuitos",
+            circuits,
+            edges_list,
+            fundamental_edges,
+            "🔄 MATRIZ DE CIRCUITOS (TODOS)",
+            "Azul claro = circuito fundamental | Blanco = circuito no fundamental"
+        )
 
-        # Filas
-        for i, e in enumerate(edges):
-            result += f"{e:>3} |"
-            for j in range(len(vertices)):
-                result += f"{matrix[i][j]:>3} "
-            result += "\n"
+    def show_circuit_matrix(self):
+        """Muestra matriz de circuitos fundamentales"""
+        if len(self.graph.vertices) == 0:
+            messagebox.showwarning("Advertencia", "El grafo está vacío")
+            return
 
-        self.show_results(result)
-        self.notebook.set("Resultados")
+        if not self.graph.is_connected():
+            messagebox.showerror("Error", "El grafo debe ser conexo")
+            return
+
+        fundamental = self.graph.fundamental_cycles()
+        if not fundamental:
+            messagebox.showinfo("Info", "No se encontraron circuitos fundamentales")
+            return
+
+        edges_list = sorted(list(self.graph.edges.keys()))
+        circuits = [{"id": i+1, "edges": c.get("all_edges", [])} for i, c in enumerate(fundamental)]
+        fundamental_edges = {tuple(sorted(c.get("all_edges", []))) for c in fundamental}
+
+        self._show_circuits_cut_sets_matrix(
+            "Matriz de Circuitos Fundamentales",
+            circuits,
+            edges_list,
+            fundamental_edges,
+            "🔄 MATRIZ DE CIRCUITOS FUNDAMENTALES",
+            "Azul claro = arista en circuito fundamental"
+        )
+
+    def show_all_cut_sets_matrix(self):
+        """Muestra matriz de todos los conjuntos de corte"""
+        if len(self.graph.vertices) == 0:
+            messagebox.showwarning("Advertencia", "El grafo está vacío")
+            return
+
+        if not self.graph.is_connected():
+            messagebox.showerror("Error", "El grafo debe ser conexo")
+            return
+
+        cuts_result = self.graph.find_cut_sets()
+        if not cuts_result.get("success", False):
+            messagebox.showerror("Error", "No se encontraron conjuntos de corte")
+            return
+
+        cuts = cuts_result.get("cut_sets", [])
+        fundamental = self.graph.fundamental_cut_sets()
+        fundamental_edges = {tuple(sorted(c.get("cut_edges", []))) for c in fundamental}
+
+        edges_list = sorted(list(self.graph.edges.keys()))
+        cut_sets = [{"id": i+1, "edges": c.get("edges", [])} for i, c in enumerate(cuts)]
+
+        self._show_circuits_cut_sets_matrix(
+            "Matriz de Conjuntos de Corte",
+            cut_sets,
+            edges_list,
+            fundamental_edges,
+            "✂️ MATRIZ DE CONJUNTOS DE CORTE (TODOS)",
+            "Azul claro = conjunto de corte fundamental | Blanco = conjunto de corte no fundamental"
+        )
+
+    def show_fundamental_cut_matrix(self):
+        """Muestra matriz de conjuntos de corte fundamentales"""
+        if len(self.graph.vertices) == 0:
+            messagebox.showwarning("Advertencia", "El grafo está vacío")
+            return
+
+        if not self.graph.is_connected():
+            messagebox.showerror("Error", "El grafo debe ser conexo")
+            return
+
+        fundamental = self.graph.fundamental_cut_sets()
+        if not fundamental:
+            messagebox.showinfo("Info", "No se encontraron conjuntos de corte fundamentales")
+            return
+
+        edges_list = sorted(list(self.graph.edges.keys()))
+        cut_sets = [{"id": i+1, "edges": c.get("cut_edges", [])} for i, c in enumerate(fundamental)]
+        fundamental_edges = {tuple(sorted(c.get("cut_edges", []))) for c in fundamental}
+
+        self._show_circuits_cut_sets_matrix(
+            "Matriz de Conjuntos de Corte Fundamentales",
+            cut_sets,
+            edges_list,
+            fundamental_edges,
+            "✂️ MATRIZ DE CONJUNTOS DE CORTE FUNDAMENTALES",
+            "Azul claro = arista en conjunto de corte fundamental"
+        )
+
+    def _show_circuits_cut_sets_matrix(self, title, items, edges_list, fundamental_edges, header_title, header_desc):
+        """Muestra una matriz de circuitos o conjuntos de corte"""
+        matrix_window = ctk.CTkToplevel(self)
+        matrix_window.title(title)
+        matrix_window.geometry("1000x600")
+
+        main_frame = ctk.CTkScrollableFrame(matrix_window, fg_color="transparent")
+        main_frame.pack(fill="both", expand=True, padx=0, pady=0)
+
+        # Título
+        title_frame = ctk.CTkFrame(main_frame, fg_color="#f0f0f0")
+        title_frame.pack(fill="x", padx=0, pady=0)
+
+        ctk.CTkLabel(
+            title_frame,
+            text=header_title,
+            font=("Segoe UI", 16, "bold"),
+            text_color="#000000"
+        ).pack(pady=10, padx=20)
+
+        ctk.CTkLabel(
+            title_frame,
+            text=header_desc,
+            font=("Segoe UI", 10),
+            text_color="#555555"
+        ).pack(pady=(0, 10), padx=20)
+
+        # Frame de tabla
+        table_frame = ctk.CTkFrame(main_frame, fg_color="white")
+        table_frame.pack(fill="both", expand=True, padx=20, pady=20)
+
+        n_cols = len(edges_list) + 1
+        for col in range(n_cols):
+            table_frame.grid_columnconfigure(col, minsize=60, weight=1)
+
+        # Encabezado de columnas
+        ctk.CTkLabel(table_frame, text="", font=("Segoe UI", 10, "bold"), text_color="#000000", fg_color="white").grid(row=0, column=0, padx=5, pady=10)
+        for col, edge in enumerate(edges_list):
+            ctk.CTkLabel(
+                table_frame,
+                text=edge,
+                font=("Segoe UI", 9, "bold"),
+                text_color="#000000",
+                fg_color="#ffffff"
+            ).grid(row=0, column=col+1, padx=5, pady=10, sticky="ew")
+
+        # Filas para cada item
+        for i, item in enumerate(items):
+            item_edges = set(item.get("edges", []))
+            is_fundamental = tuple(sorted(item_edges)) in fundamental_edges
+
+            # Etiqueta de fila
+            row_label = f"{['C', 'K'][i % 2]}{item.get('id', i+1)}"  # Alterna C y K
+            ctk.CTkLabel(
+                table_frame,
+                text=row_label,
+                font=("Segoe UI", 9, "bold"),
+                text_color="#000000",
+                fg_color="#ffffff"
+            ).grid(row=i+1, column=0, padx=5, pady=10, sticky="ew")
+
+            # Datos
+            for j, edge in enumerate(edges_list):
+                value = 1 if edge in item_edges else 0
+                bg_color = "#5dade2" if (value == 1 and is_fundamental) else "#d4e8f0" if value == 1 else "white"
+                ctk.CTkLabel(
+                    table_frame,
+                    text=str(value),
+                    font=("Segoe UI", 10, "bold" if value == 1 else "normal"),
+                    text_color="#000000",
+                    fg_color=bg_color
+                ).grid(row=i+1, column=j+1, padx=5, pady=10, sticky="ew")
 
     # ==================== VISUALIZACIÓN ====================
 
@@ -508,41 +703,26 @@ class GraphTheoryContent(ctk.CTkFrame):
             )
             self.ax.axis('off')
             self.canvas.draw()
-            self.graph_pos = None  # Resetear posición
+            self.graph_pos = None
             return
 
-        G = nx.Graph()
+        G = nx.DiGraph() if self.graph.is_directed else nx.Graph()
         G.add_nodes_from(self.graph.vertices)
 
         edge_labels = {}
-        for edge_name, (v1, v2) in self.graph.edges.items():
+        for edge_name, edge_data in self.graph.edges.items():
+            v1, v2 = edge_data[0], edge_data[1]
             G.add_edge(v1, v2)
             edge_labels[(v1, v2)] = edge_name
 
-        # Calcular o reutilizar posición del grafo
         current_vertices = set(self.graph.vertices)
 
         if self.graph_pos is None:
-            # Primera vez o después de limpiar
-            self.graph_pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
+            self.graph_pos = nx.circular_layout(G)
         else:
-            # Verificar si hay cambios en vértices
             stored_vertices = set(self.graph_pos.keys())
-
             if current_vertices != stored_vertices:
-                new_vertices = current_vertices - stored_vertices
-                removed_vertices = stored_vertices - current_vertices
-
-                if new_vertices:
-                    # Calcular posición para nuevos vértices
-                    temp_pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
-                    for v in new_vertices:
-                        self.graph_pos[v] = temp_pos[v]
-
-                if removed_vertices:
-                    # Eliminar vértices que ya no existen
-                    for v in removed_vertices:
-                        del self.graph_pos[v]
+                self.graph_pos = nx.circular_layout(G)
 
         pos = self.graph_pos
 
@@ -557,7 +737,9 @@ class GraphTheoryContent(ctk.CTkFrame):
             G, pos, ax=self.ax,
             edge_color='#95a5a6',
             width=2,
-            alpha=0.6
+            alpha=0.6,
+            arrowsize=20 if self.graph.is_directed else 0,
+            arrowstyle='->' if self.graph.is_directed else ''
         )
 
         nx.draw_networkx_labels(
@@ -570,22 +752,19 @@ class GraphTheoryContent(ctk.CTkFrame):
         nx.draw_networkx_edge_labels(
             G, pos, edge_labels, ax=self.ax,
             font_size=9,
-            font_color='#ecf0f1'
+            font_color='#000000'
         )
 
+        graph_type = "Dirigido" if self.graph.is_directed else "No dirigido"
+        weights_str = "con pesos" if self.graph.has_weights else "sin pesos"
         self.ax.set_title(
-            f"Vértices: {len(self.graph.vertices)}, Aristas: {len(self.graph.edges)}",
+            f"{graph_type} {weights_str} | Vértices: {len(self.graph.vertices)}, Aristas: {len(self.graph.edges)}",
             color='white',
-            fontsize=14,
+            fontsize=12,
             fontweight='bold'
         )
         self.ax.axis('off')
         self.canvas.draw()
-
-    def show_results(self, text: str):
-        """Muestra resultados en el panel de texto"""
-        self.results_text.delete("1.0", "end")
-        self.results_text.insert("1.0", text)
 
     def show_status(self, message: str):
         """Muestra mensaje de estado"""
@@ -619,6 +798,12 @@ class GraphTheoryContent(ctk.CTkFrame):
             try:
                 with open(filename, 'r', encoding='utf-8') as f:
                     self.graph = GraphTheory.from_json(f.read())
+
+                self.directed_var.set(self.graph.is_directed)
+                self.weights_var.set(self.graph.has_weights)
+                self.weight_entry.configure(state="normal" if self.weights_var.get() else "disabled")
+
+                self.update_comboboxes()
                 self.draw_graph()
                 messagebox.showinfo("Éxito", "Grafo cargado exitosamente")
             except Exception as e:
@@ -628,7 +813,10 @@ class GraphTheoryContent(ctk.CTkFrame):
         """Limpia todo"""
         if messagebox.askyesno("Confirmar", "¿Limpiar todo el grafo?"):
             self.graph = GraphTheory()
-            self.graph_pos = None  # Resetear posición del grafo
+            self.graph_pos = None
+            self.directed_var.set(False)
+            self.weights_var.set(False)
+            self.weight_entry.configure(state="disabled")
+            self.update_comboboxes()
             self.draw_graph()
-            self.results_text.delete("1.0", "end")
             self.show_status("✓ Grafo limpiado")

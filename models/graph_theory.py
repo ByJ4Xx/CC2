@@ -19,28 +19,48 @@ import numpy as np
 class GraphTheory:
     """
     Clase para análisis de teoría de grafos
-    Soporta grafos no dirigidos con vértices y aristas nombradas
+    Soporta grafos dirigidos o no dirigidos con vértices y aristas nombradas
+    Opcionalmente permite asignar pesos a las aristas
     """
     vertices: Set[str] = field(default_factory=set)
-    edges: Dict[str, Tuple[str, str]] = field(default_factory=dict)  # nombre -> (v1, v2)
+    edges: Dict[str, Tuple[str, str, Optional[float]]] = field(default_factory=dict)  # nombre -> (v1, v2, weight)
+    is_directed: bool = False
+    has_weights: bool = False
 
     def __post_init__(self):
         """Valida que las aristas tengan vértices válidos"""
-        for edge_name, (v1, v2) in list(self.edges.items()):
-            if v1 not in self.vertices or v2 not in self.vertices:
-                # Agregar vértices automáticamente si no existen
-                self.vertices.add(v1)
-                self.vertices.add(v2)
+        for edge_name, edge_data in list(self.edges.items()):
+            if isinstance(edge_data, tuple) and len(edge_data) >= 2:
+                v1, v2 = edge_data[0], edge_data[1]
+                if v1 not in self.vertices or v2 not in self.vertices:
+                    # Agregar vértices automáticamente si no existen
+                    self.vertices.add(v1)
+                    self.vertices.add(v2)
 
     def add_vertex(self, vertex: str) -> None:
         """Agrega un vértice al grafo"""
         self.vertices.add(vertex)
 
-    def add_edge(self, edge_name: str, v1: str, v2: str) -> bool:
+    def remove_vertex(self, vertex: str) -> bool:
+        """Elimina un vértice y todas sus aristas asociadas"""
+        if vertex not in self.vertices:
+            return False
+        self.vertices.discard(vertex)
+        # Eliminar aristas que contienen este vértice
+        edges_to_remove = [name for name, edge_data in self.edges.items()
+                          if edge_data[0] == vertex or edge_data[1] == vertex]
+        for edge_name in edges_to_remove:
+            del self.edges[edge_name]
+        return True
+
+    def add_edge(self, edge_name: str, v1: str, v2: str, weight: Optional[float] = None) -> bool:
         """Agrega una arista entre dos vértices"""
         if v1 not in self.vertices or v2 not in self.vertices:
             return False
-        self.edges[edge_name] = (v1, v2)
+        if weight is not None:
+            self.edges[edge_name] = (v1, v2, weight)
+        else:
+            self.edges[edge_name] = (v1, v2, 1.0)
         return True
 
     def remove_edge(self, edge_name: str) -> bool:
@@ -50,12 +70,30 @@ class GraphTheory:
             return True
         return False
 
-    def _to_networkx(self) -> nx.Graph:
+    def modify_edge(self, edge_name: str, v1: str, v2: str, weight: Optional[float] = None) -> bool:
+        """Modifica una arista existente"""
+        if edge_name not in self.edges:
+            return False
+        if v1 not in self.vertices or v2 not in self.vertices:
+            return False
+        if weight is not None:
+            self.edges[edge_name] = (v1, v2, weight)
+        else:
+            self.edges[edge_name] = (v1, v2, 1.0)
+        return True
+
+    def _to_networkx(self):
         """Convierte el grafo a formato NetworkX"""
-        G = nx.Graph()
+        if self.is_directed:
+            G = nx.DiGraph()
+        else:
+            G = nx.Graph()
+
         G.add_nodes_from(self.vertices)
-        for edge_name, (v1, v2) in self.edges.items():
-            G.add_edge(v1, v2, name=edge_name)
+        for edge_name, edge_data in self.edges.items():
+            v1, v2 = edge_data[0], edge_data[1]
+            weight = edge_data[2] if len(edge_data) > 2 else 1.0
+            G.add_edge(v1, v2, name=edge_name, weight=weight)
         return G
 
     # ==================== MATRICES ====================
@@ -71,11 +109,15 @@ class GraphTheory:
 
         vertex_to_idx = {v: i for i, v in enumerate(vertices_list)}
 
-        for v1, v2 in self.edges.values():
+        for edge_data in self.edges.values():
+            v1, v2 = edge_data[0], edge_data[1]
             i = vertex_to_idx[v1]
             j = vertex_to_idx[v2]
-            matrix[i][j] += 1
-            matrix[j][i] += 1
+            if self.is_directed:
+                matrix[i][j] += 1
+            else:
+                matrix[i][j] += 1
+                matrix[j][i] += 1
 
         return matrix, vertices_list
 
@@ -89,10 +131,12 @@ class GraphTheory:
         matrix = np.zeros((n, n), dtype=int)
 
         for i, edge1 in enumerate(edges_list):
-            v1_set = set(self.edges[edge1])
+            edge_data1 = self.edges[edge1]
+            v1_set = {edge_data1[0], edge_data1[1]}
             for j, edge2 in enumerate(edges_list):
                 if i != j:
-                    v2_set = set(self.edges[edge2])
+                    edge_data2 = self.edges[edge2]
+                    v2_set = {edge_data2[0], edge_data2[1]}
                     if v1_set & v2_set:  # Intersección no vacía
                         matrix[i][j] = 1
 
@@ -113,11 +157,13 @@ class GraphTheory:
         vertex_to_idx = {v: i for i, v in enumerate(vertices_list)}
 
         for j, edge_name in enumerate(edges_list):
-            v1, v2 = self.edges[edge_name]
+            edge_data = self.edges[edge_name]
+            v1, v2 = edge_data[0], edge_data[1]
             i1 = vertex_to_idx[v1]
             i2 = vertex_to_idx[v2]
             matrix[i1][j] = 1
-            matrix[i2][j] = 1
+            if v1 != v2:  # No contar loops dos veces
+                matrix[i2][j] = 1
 
         return matrix, vertices_list, edges_list
 
@@ -174,7 +220,8 @@ class GraphTheory:
                 v2 = cycle[(j + 1) % len(cycle)]
 
                 # Buscar la arista entre v1 y v2
-                for edge_name, (e_v1, e_v2) in self.edges.items():
+                for edge_name, edge_data in self.edges.items():
+                    e_v1, e_v2 = edge_data[0], edge_data[1]
                     if (e_v1 == v1 and e_v2 == v2) or (e_v1 == v2 and e_v2 == v1):
                         circuit_edges.append(edge_name)
                         break
@@ -212,13 +259,15 @@ class GraphTheory:
 
         # Para cada cuerda, encontrar el ciclo fundamental
         for chord_name in chord_edges:
-            v1, v2 = self.edges[chord_name]
+            edge_data = self.edges[chord_name]
+            v1, v2 = edge_data[0], edge_data[1]
 
             # Crear subgrafo solo con aristas del árbol
             tree_graph = nx.Graph()
             tree_graph.add_nodes_from(G.nodes())
             for edge_name in spanning_tree_edges:
-                e_v1, e_v2 = self.edges[edge_name]
+                edge_data = self.edges[edge_name]
+                e_v1, e_v2 = edge_data[0], edge_data[1]
                 tree_graph.add_edge(e_v1, e_v2, name=edge_name)
 
             try:
@@ -229,7 +278,8 @@ class GraphTheory:
                 path_edges = []
                 for i in range(len(path) - 1):
                     for edge_name in spanning_tree_edges:
-                        e_v1, e_v2 = self.edges[edge_name]
+                        edge_data = self.edges[edge_name]
+                        e_v1, e_v2 = edge_data[0], edge_data[1]
                         if (e_v1 == path[i] and e_v2 == path[i+1]) or \
                            (e_v1 == path[i+1] and e_v2 == path[i]):
                             path_edges.append(edge_name)
@@ -252,49 +302,90 @@ class GraphTheory:
 
     def find_cut_sets(self) -> List[Dict]:
         """
-        Encuentra conjuntos de corte (edge cuts) mínimos
-        Un conjunto de corte es un conjunto de aristas cuya eliminación desconecta el grafo
+        Encuentra conjuntos de corte (edge cuts) mínimos del grafo.
+        Un conjunto de corte es un conjunto mínimo de aristas cuya remoción
+        desconecta el grafo o aumenta el número de componentes conexas.
         """
+        from itertools import combinations
+
         G = self._to_networkx()
 
         if not nx.is_connected(G):
-            return []
+            return {
+                "success": False,
+                "error": "El grafo no es conexo",
+                "cut_sets": []
+            }
 
         cut_sets = []
+        edge_names_list = list(self.edges.keys())
 
-        # Encontrar todos los cortes mínimos entre pares de vértices
-        vertices_list = list(G.nodes())
-        seen_cuts = set()
-
-        for i, source in enumerate(vertices_list):
-            for target in vertices_list[i+1:]:
-                # Encontrar corte mínimo entre source y target
-                cut_value, partition = nx.minimum_cut(G, source, target)
-
-                reachable, non_reachable = partition
-
-                # Encontrar las aristas del corte
-                cut_edges = []
-                for edge_name, (v1, v2) in self.edges.items():
-                    if (v1 in reachable and v2 in non_reachable) or \
-                       (v1 in non_reachable and v2 in reachable):
-                        cut_edges.append(edge_name)
-
-                # Normalizar el conjunto de aristas para evitar duplicados
-                normalized_cut = tuple(sorted(cut_edges))
-
-                if normalized_cut not in seen_cuts and len(cut_edges) > 0:
-                    seen_cuts.add(normalized_cut)
+        # Buscar puentes (aristas cuya remoción desconecta el grafo)
+        bridges = list(nx.bridges(G))
+        bridge_names = []
+        for bridge in bridges:
+            # Encontrar el nombre de la arista
+            for edge_name, edge_data in self.edges.items():
+                v1, v2 = edge_data[0], edge_data[1]
+                if (v1, v2) == bridge or (v2, v1) == bridge:
+                    bridge_names.append(edge_name)
                     cut_sets.append({
-                        "edges": cut_edges,
-                        "size": len(cut_edges),
-                        "partitions": [sorted(list(reachable)), sorted(list(non_reachable))]
+                        "edges": [edge_name],
+                        "size": 1,
+                        "type": "bridge",
+                        "cardinality": 1
                     })
+                    break
 
-        # Ordenar por tamaño
-        cut_sets.sort(key=lambda x: x["size"])
+        # Buscar conjuntos de corte de mayor cardinalidad
+        if len(edge_names_list) <= 15:  # Solo para grafos pequeños
+            # Buscar por cardinalidad: primero de tamaño 2, luego 3, etc.
+            for size in range(2, len(edge_names_list)):
+                found_any = False
 
-        return cut_sets
+                for combination in combinations(edge_names_list, size):
+                    # Crear grafo de prueba sin estas aristas
+                    G_test = nx.Graph()
+                    G_test.add_nodes_from(self.vertices)
+
+                    for edge_name, edge_data in self.edges.items():
+                        if edge_name not in combination:
+                            v1, v2 = edge_data[0], edge_data[1]
+                            G_test.add_edge(v1, v2)
+
+                    # Verificar si es un conjunto de corte
+                    if not nx.is_connected(G_test):
+                        # Verificar que no es superset de otro conjunto de corte
+                        is_minimal = True
+                        for cut_set in cut_sets:
+                            if set(cut_set["edges"]).issubset(set(combination)):
+                                is_minimal = False
+                                break
+
+                        # Verificar que no es duplicado
+                        is_duplicate = any(
+                            set(cs["edges"]) == set(combination) for cs in cut_sets
+                        )
+
+                        if is_minimal and not is_duplicate:
+                            cut_sets.append({
+                                "edges": list(combination),
+                                "size": len(combination),
+                                "type": "cut_set",
+                                "cardinality": size
+                            })
+                            found_any = True
+
+                # Si no encontramos conjuntos de este tamaño, no buscar tamaños mayores
+                if not found_any:
+                    break
+
+        return {
+            "success": True,
+            "cut_sets": cut_sets,
+            "num_cut_sets": len(cut_sets),
+            "bridges": len(bridges)
+        }
 
     def fundamental_cut_sets(self, spanning_tree_edges: Optional[Set[str]] = None) -> List[Dict]:
         """
@@ -319,7 +410,8 @@ class GraphTheory:
 
         # Para cada arista del árbol
         for tree_edge_name in spanning_tree_edges:
-            v1, v2 = self.edges[tree_edge_name]
+            edge_data = self.edges[tree_edge_name]
+            v1, v2 = edge_data[0], edge_data[1]
 
             # Remover la arista del árbol para obtener dos componentes
             temp_tree = nx.Graph()
@@ -327,7 +419,8 @@ class GraphTheory:
 
             for edge_name in spanning_tree_edges:
                 if edge_name != tree_edge_name:
-                    e_v1, e_v2 = self.edges[edge_name]
+                    edge_data = self.edges[edge_name]
+                    e_v1, e_v2 = edge_data[0], edge_data[1]
                     temp_tree.add_edge(e_v1, e_v2)
 
             # Encontrar las dos componentes
@@ -339,8 +432,9 @@ class GraphTheory:
                 # Encontrar todas las aristas que cruzan entre las componentes
                 cut_edges = [tree_edge_name]  # Incluir la arista del árbol
 
-                for edge_name, (e_v1, e_v2) in self.edges.items():
+                for edge_name, edge_data in self.edges.items():
                     if edge_name != tree_edge_name:
+                        e_v1, e_v2 = edge_data[0], edge_data[1]
                         if (e_v1 in comp1 and e_v2 in comp2) or \
                            (e_v1 in comp2 and e_v2 in comp1):
                             cut_edges.append(edge_name)
@@ -380,9 +474,17 @@ class GraphTheory:
 
     def to_dict(self) -> dict:
         """Convierte el grafo a diccionario"""
+        edges_dict = {}
+        for name, edge_data in self.edges.items():
+            v1, v2 = edge_data[0], edge_data[1]
+            weight = edge_data[2] if len(edge_data) > 2 else 1.0
+            edges_dict[name] = [v1, v2, weight]
+
         return {
             "vertices": sorted(list(self.vertices)),
-            "edges": {name: [v1, v2] for name, (v1, v2) in self.edges.items()}
+            "edges": edges_dict,
+            "is_directed": self.is_directed,
+            "has_weights": self.has_weights
         }
 
     def to_json(self) -> str:
@@ -392,9 +494,16 @@ class GraphTheory:
     @classmethod
     def from_dict(cls, data: dict) -> GraphTheory:
         """Crea un grafo desde un diccionario"""
-        graph = cls(vertices=set(data["vertices"]))
-        for name, (v1, v2) in data["edges"].items():
-            graph.add_edge(name, v1, v2)
+        graph = cls(
+            vertices=set(data["vertices"]),
+            is_directed=data.get("is_directed", False),
+            has_weights=data.get("has_weights", False)
+        )
+        for name, edge_info in data["edges"].items():
+            if isinstance(edge_info, (list, tuple)) and len(edge_info) >= 2:
+                v1, v2 = edge_info[0], edge_info[1]
+                weight = edge_info[2] if len(edge_info) > 2 else 1.0
+                graph.add_edge(name, v1, v2, weight)
         return graph
 
     @classmethod
