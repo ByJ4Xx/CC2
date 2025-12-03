@@ -436,7 +436,7 @@ class GraphOperationsContent(ctk.CTkFrame):
         # Información del grafo
         info = ctk.CTkLabel(
             item_frame,
-            text=f"G{graph.number}\n|S|={len(graph.vertices)} |A|={len(graph.edges)}",
+            text=f"{graph.get_display_name()}\n|S|={len(graph.vertices)} |A|={len(graph.edges)}",
             font=("Segoe UI", 11),
             anchor="w"
         )
@@ -464,25 +464,27 @@ class GraphOperationsContent(ctk.CTkFrame):
             f"{e.name}: {{{e.get_vertices_list()[0]}, {e.get_vertices_list()[1]}}}"
             for e in sorted(g.edges, key=lambda x: x.name)
         ]) if g.edges else "∅"
-        
-        info = f"""INFORMACIÓN DEL GRAFO G{g.number}
 
-Conjunto de Vértices S{g.number}:
+        display_name = g.get_display_name()
+        info = f"""INFORMACIÓN DEL GRAFO {display_name}
+
+Conjunto de Vértices S:
 {vertices_str}
 
-Conjunto de Aristas A{g.number}:
+Conjunto de Aristas A:
 {edges_str}
 
 Cardinalidades:
-|S{g.number}| = {len(g.vertices)}
-|A{g.number}| = {len(g.edges)}
+|S| = {len(g.vertices)}
+|A| = {len(g.edges)}
 
 Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
+{"Expresión: " + g.expression if g.expression else ""}
 """
-        
+
         # Crear ventana de información
         info_window = ctk.CTkToplevel(self)
-        info_window.title(f"Información de G{g.number}")
+        info_window.title(f"Información de {display_name}")
         info_window.geometry("500x400")
         
         text = ctk.CTkTextbox(info_window, font=("Consolas", 11))
@@ -605,7 +607,7 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
         self.current_graph = result
         self.refresh_graphs_list()
         self.draw_graph(result)
-        self.show_status(f"✓ Complemento calculado → G{result.number}", "success")
+        self.show_status(f"✓ Complemento calculado → {result.get_display_name()}", "success")
     
     def do_vertex_fusion(self):
         """Fusiona dos vértices del grafo actual"""
@@ -643,7 +645,7 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
             self.current_graph = result
             self.refresh_graphs_list()
             self.draw_graph(result)
-            self.show_status(f"✓ Vértices fusionados → G{result.number}", "success")
+            self.show_status(f"✓ Vértices fusionados → {result.get_display_name()}", "success")
             dialog.destroy()
         
         ctk.CTkButton(dialog, text="Fusionar", command=confirm).pack(pady=10)
@@ -680,7 +682,7 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
             self.current_graph = result
             self.refresh_graphs_list()
             self.draw_graph(result)
-            self.show_status(f"✓ Arista contraída → G{result.number}", "success")
+            self.show_status(f"✓ Arista contraída → {result.get_display_name()}", "success")
             dialog.destroy()
 
         ctk.CTkButton(dialog, text="Contraer", command=confirm).pack(pady=10)
@@ -699,7 +701,7 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
         self.current_graph = result
         self.refresh_graphs_list()
         self.draw_graph(result)
-        self.show_status(f"✓ Grafo línea calculado → G{result.number}", "success")
+        self.show_status(f"✓ Grafo línea calculado → {result.get_display_name()}", "success")
     
     # ==================== OPERACIONES BINARIAS ====================
     
@@ -712,12 +714,12 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
         result = self.selected_graphs[0]
         for g in self.selected_graphs[1:]:
             result = self.manager.union(result, g)
-        
+
         self.selected_graphs.clear()
         self.current_graph = result
         self.refresh_graphs_list()
         self.draw_graph(result)
-        self.show_status(f"✓ Unión calculada → G{result.number}", "success")
+        self.show_status(f"✓ Unión calculada → {result.get_display_name()}", "success")
     
     def do_intersection(self):
         """Intersección de grafos"""
@@ -728,12 +730,12 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
         result = self.selected_graphs[0]
         for g in self.selected_graphs[1:]:
             result = self.manager.intersection(result, g)
-        
+
         self.selected_graphs.clear()
         self.current_graph = result
         self.refresh_graphs_list()
         self.draw_graph(result)
-        self.show_status(f"✓ Intersección calculada → G{result.number}", "success")
+        self.show_status(f"✓ Intersección calculada → {result.get_display_name()}", "success")
     
     def do_ring_sum(self):
         """Suma anillo de grafos"""
@@ -746,7 +748,7 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
         self.current_graph = result
         self.refresh_graphs_list()
         self.draw_graph(result)
-        self.show_status(f"✓ Suma anillo calculada → G{result.number}", "success")
+        self.show_status(f"✓ Suma anillo calculada → {result.get_display_name()}", "success")
     
     def do_sum(self):
         """Suma de grafos"""
@@ -759,7 +761,7 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
         self.current_graph = result
         self.refresh_graphs_list()
         self.draw_graph(result)
-        self.show_status(f"✓ Suma calculada → G{result.number}", "success")
+        self.show_status(f"✓ Suma calculada → {result.get_display_name()}", "success")
     
     def do_cartesian_product(self):
         """Producto cartesiano de grafos"""
@@ -772,7 +774,7 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
         self.current_graph = result
         self.refresh_graphs_list()
         self.draw_graph(result)
-        self.show_status(f"✓ Producto cartesiano calculado → G{result.number}", "success")
+        self.show_status(f"✓ Producto cartesiano calculado → {result.get_display_name()}", "success")
     
     def do_tensor_product(self):
         """Producto tensorial de grafos"""
@@ -785,7 +787,7 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
         self.current_graph = result
         self.refresh_graphs_list()
         self.draw_graph(result)
-        self.show_status(f"✓ Producto tensorial calculado → G{result.number}", "success")
+        self.show_status(f"✓ Producto tensorial calculado → {result.get_display_name()}", "success")
     
     def do_composition(self):
         """Composición de grafos"""
@@ -798,7 +800,7 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
         self.current_graph = result
         self.refresh_graphs_list()
         self.draw_graph(result)
-        self.show_status(f"✓ Composición calculada → G{result.number}", "success")
+        self.show_status(f"✓ Composición calculada → {result.get_display_name()}", "success")
     
     # ==================== PERSISTENCIA ====================
     
@@ -916,7 +918,7 @@ Tipo: {"Resultado de operación" if g.is_result else "Grafo base"}
         )
 
         self.ax.set_title(
-            f"G{graph.number} - S{graph.number}={len(graph.vertices)}, A{graph.number}={len(graph.edges)}",
+            f"{graph.get_display_name()} - |S|={len(graph.vertices)}, |A|={len(graph.edges)}",
             color='white',
             fontsize=14,
             fontweight='bold'

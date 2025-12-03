@@ -69,6 +69,7 @@ class GraphData:
     vertices: Set[str] = field(default_factory=set)
     edges: Set[Edge] = field(default_factory=set)
     is_result: bool = False  # Marca si es resultado de una operación
+    expression: str = ""  # Nombre descriptivo (ej: "G1+G2", "L(G1)", etc)
     
     def add_vertex(self, vertex: str) -> None:
         """Agrega un vértice al grafo"""
@@ -119,7 +120,8 @@ class GraphData:
             "number": self.number,
             "vertices": sorted(list(self.vertices)),
             "edges": [e.to_dict() for e in self.edges],
-            "is_result": self.is_result
+            "is_result": self.is_result,
+            "expression": self.expression
         }
     
     @classmethod
@@ -128,19 +130,25 @@ class GraphData:
         graph = cls(
             number=data["number"],
             vertices=set(data["vertices"]),
-            is_result=data.get("is_result", False)
+            is_result=data.get("is_result", False),
+            expression=data.get("expression", "")
         )
-        
+
         for edge_data in data["edges"]:
             v_list = edge_data["vertices"]
             if len(v_list) >= 2:
                 edge = Edge(edge_data["name"], v_list[0], v_list[1])
                 graph.edges.add(edge)
-        
+
         return graph
     
     def __str__(self) -> str:
-        return f"G{self.number}: |S|={len(self.vertices)}, |A|={len(self.edges)}"
+        name = self.expression if self.expression else f"G{self.number}"
+        return f"{name}: |S|={len(self.vertices)}, |A|={len(self.edges)}"
+
+    def get_display_name(self) -> str:
+        """Retorna el nombre a mostrar en la interfaz"""
+        return self.expression if self.expression else f"G{self.number}"
 
 
 class GraphOperationsManager:
@@ -186,7 +194,7 @@ class GraphOperationsManager:
         Calcula el complemento de un grafo
         G' tiene las mismas vértices pero las aristas complementarias
         """
-        result = GraphData(number=self.next_number, is_result=True)
+        result = GraphData(number=self.next_number, is_result=True, expression=f"{g.get_display_name()}'")
         result.vertices = g.vertices.copy()
         
         # Obtener todas las aristas posibles
@@ -219,7 +227,7 @@ class GraphOperationsManager:
         Las aristas entre v1 y v2 se eliminan (loops)
         Las demás aristas se actualizan al nuevo vértice
         """
-        result = GraphData(number=self.next_number, is_result=True)
+        result = GraphData(number=self.next_number, is_result=True, expression=f"{g.get_display_name()}(f:{v1},{v2})")
         
         # Nuevo nombre del vértice fusionado
         new_vertex = f"{v1}{v2}"
@@ -271,7 +279,10 @@ class GraphOperationsManager:
         temp_graph.edges = g.edges.copy()
         temp_graph.remove_edge(edge_name)
 
-        return self.vertex_fusion(temp_graph, vertices[0], vertices[1])
+        result = self.vertex_fusion(temp_graph, vertices[0], vertices[1])
+        # Actualizar la expresión a contracción en lugar de fusión
+        result.expression = f"{g.get_display_name()}(c:{edge_name})"
+        return result
 
     def line_graph(self, g: GraphData) -> GraphData:
         """
@@ -285,7 +296,8 @@ class GraphOperationsManager:
         L(G) tiene vértices: db, dc, bc, ab
         Aristas: b (conecta db-ab y db-bc), d (conecta db-dc), c (conecta dc-bc)
         """
-        result = GraphData(number=self.next_number, is_result=True)
+        result = GraphData(number=self.next_number, is_result=True,
+                          expression=f"L({g.get_display_name()})")
 
         # Convertir cada arista de G en un vértice de L(G)
         # El nombre del vértice es la concatenación ordenada de sus vértices finales
@@ -325,7 +337,8 @@ class GraphOperationsManager:
         S3 = S1 ∪ S2
         A3 = A1 ∪ A2
         """
-        result = GraphData(number=self.next_number, is_result=True)
+        result = GraphData(number=self.next_number, is_result=True,
+                          expression=f"{g1.get_display_name()}∪{g2.get_display_name()}")
         result.vertices = g1.vertices | g2.vertices
         result.edges = g1.edges | g2.edges
         
@@ -339,7 +352,8 @@ class GraphOperationsManager:
         S3 = S1 ∩ S2
         A3 = A1 ∩ A2 (solo aristas cuyos vértices están en S3)
         """
-        result = GraphData(number=self.next_number, is_result=True)
+        result = GraphData(number=self.next_number, is_result=True,
+                          expression=f"{g1.get_display_name()}∩{g2.get_display_name()}")
         result.vertices = g1.vertices & g2.vertices
         
         # Solo aristas que están en ambos y cuyos vértices están en la intersección
@@ -357,7 +371,8 @@ class GraphOperationsManager:
         S3 = S1 ∪ S2
         A3 = (A1 ∪ A2) - (A1 ∩ A2)
         """
-        result = GraphData(number=self.next_number, is_result=True)
+        result = GraphData(number=self.next_number, is_result=True,
+                          expression=f"{g1.get_display_name()}⊕{g2.get_display_name()}")
         result.vertices = g1.vertices | g2.vertices
         result.edges = (g1.edges | g2.edges) - (g1.edges & g2.edges)
         
@@ -370,7 +385,8 @@ class GraphOperationsManager:
         Suma de grafos: G1 + G2
         Une ambos grafos y agrega aristas entre todos los vértices de G1 y G2
         """
-        result = GraphData(number=self.next_number, is_result=True)
+        result = GraphData(number=self.next_number, is_result=True,
+                          expression=f"{g1.get_display_name()}+{g2.get_display_name()}")
         result.vertices = g1.vertices | g2.vertices
         result.edges = g1.edges | g2.edges
         
@@ -393,7 +409,8 @@ class GraphOperationsManager:
         Aristas: ((u1,v), (u2,v)) si (u1,u2) en A1
                  ((u,v1), (u,v2)) si (v1,v2) en A2
         """
-        result = GraphData(number=self.next_number, is_result=True)
+        result = GraphData(number=self.next_number, is_result=True,
+                          expression=f"{g1.get_display_name()}×{g2.get_display_name()}")
         
         # Crear vértices (u,v)
         for u in g1.vertices:
@@ -437,7 +454,8 @@ class GraphOperationsManager:
         Resultado: S3={ac,ad,ae,bc,bd,be}
                    A3={acbd, adbc} (dos aristas porque c-d puede ir en ambas direcciones)
         """
-        result = GraphData(number=self.next_number, is_result=True)
+        result = GraphData(number=self.next_number, is_result=True,
+                          expression=f"{g1.get_display_name()}⊗{g2.get_display_name()}")
 
         # Crear vértices (u,v)
         for u in g1.vertices:
@@ -478,11 +496,12 @@ class GraphOperationsManager:
         """
         Composición de grafos: G1 ∘ G2
         Vértices: (u, v) para todo u en S1, v en S2
-        Aristas: 
+        Aristas:
         - ((u1,v1), (u2,v2)) si (u1,u2) en A1
         - ((u,v1), (u,v2)) si (v1,v2) en A2
         """
-        result = GraphData(number=self.next_number, is_result=True)
+        result = GraphData(number=self.next_number, is_result=True,
+                          expression=f"{g1.get_display_name()}∘{g2.get_display_name()}")
         
         # Crear vértices (u,v)
         for u in g1.vertices:
