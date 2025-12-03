@@ -471,13 +471,103 @@ class WeightedGraph:
 
         return spanning_trees
 
-    def tree_distance(self, tree1: Set[str], tree2: Set[str]) -> int:
+    def is_tree(self, edge_names: Set[str]) -> bool:
         """
-        Calcula la distancia entre dos árboles de expansión
-        Distancia = número de aristas que difieren
+        Verifica si un conjunto de nombres de aristas forma un árbol válido.
+
+        Un árbol válido debe:
+        1. Tener exactamente n-1 aristas (donde n es el número de vértices)
+        2. Ser conexo (todos los vértices conectados)
+        3. No tener ciclos
+
+        Args:
+            edge_names: Conjunto de nombres de aristas a verificar
+
+        Returns:
+            True si forma un árbol válido, False en caso contrario
         """
+        n = len(self.vertices)
+
+        # Un árbol debe tener exactamente n-1 aristas
+        if len(edge_names) != n - 1:
+            return False
+
+        # Crear grafo temporal con las aristas especificadas
+        temp_graph = nx.Graph()
+        temp_graph.add_nodes_from(self.vertices)
+
+        for edge_name in edge_names:
+            if edge_name not in self.edges:
+                return False
+            v1, v2, _ = self.edges[edge_name]
+            temp_graph.add_edge(v1, v2)
+
+        # Verificar que sea un árbol (conexo y sin ciclos)
+        return nx.is_tree(temp_graph)
+
+    def tree_distance(self, tree1: Set[str], tree2: Set[str]) -> Dict:
+        """
+        Calcula la distancia entre dos árboles de expansión usando la fórmula:
+        Distancia = ((Unión - Intersección) / 2)
+
+        Donde:
+        - Unión: número de aristas que pertenecen a alguno de los dos árboles
+        - Intersección: número de aristas comunes a ambos árboles
+        - Distancia: número de aristas que difieren entre los dos árboles
+
+        Args:
+            tree1: Conjunto de nombres de aristas del primer árbol
+            tree2: Conjunto de nombres de aristas del segundo árbol
+
+        Returns:
+            Diccionario con:
+            - success: bool
+            - tree1_edges: Aristas del primer árbol
+            - tree2_edges: Aristas del segundo árbol
+            - union: Aristas en alguno de los dos árboles
+            - intersection: Aristas comunes
+            - union_count: Número de aristas en la unión
+            - intersection_count: Número de aristas en la intersección
+            - distance: Distancia calculada
+            - symmetric_difference: Aristas que difieren
+            - error: Mensaje de error (si aplica)
+        """
+        # Verificar si ambos son árboles válidos
+        if not self.is_tree(tree1):
+            return {
+                "success": False,
+                "error": "El primer conjunto de aristas no forma un árbol válido"
+            }
+
+        if not self.is_tree(tree2):
+            return {
+                "success": False,
+                "error": "El segundo conjunto de aristas no forma un árbol válido"
+            }
+
+        # Calcular unión e intersección
+        union = tree1.union(tree2)
+        intersection = tree1.intersection(tree2)
         symmetric_diff = tree1.symmetric_difference(tree2)
-        return len(symmetric_diff)
+
+        # Calcular distancia usando la fórmula: (unión - intersección) / 2
+        union_count = len(union)
+        intersection_count = len(intersection)
+        distance = (union_count - intersection_count) / 2
+
+        return {
+            "success": True,
+            "tree1_edges": sorted(list(tree1)),
+            "tree2_edges": sorted(list(tree2)),
+            "union": sorted(list(union)),
+            "intersection": sorted(list(intersection)),
+            "symmetric_difference": sorted(list(symmetric_diff)),
+            "union_count": union_count,
+            "intersection_count": intersection_count,
+            "symmetric_difference_count": len(symmetric_diff),
+            "distance": distance,
+            "is_identical": tree1 == tree2
+        }
 
     def all_tree_distances(self) -> Dict:
         """

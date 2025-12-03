@@ -27,6 +27,10 @@ class SpanningTreesContent(ctk.CTkFrame):
         self.current_tree = None  # Árbol actual para visualización
         self.graph_pos = None  # Posición fija del grafo para mantener la forma
 
+        # Variables para distancia entre árboles
+        self.first_tree = None  # Primer árbol de expansión
+        self.second_tree = None  # Segundo árbol de expansión
+
         self.setup_ui()
 
     def setup_ui(self):
@@ -276,6 +280,80 @@ class SpanningTreesContent(ctk.CTkFrame):
         ctk.CTkLabel(
             controls,
             text="Vértices con suma mínima de distancias",
+            font=("Segoe UI", 9, "italic"),
+            text_color="#95a5a6"
+        ).pack(fill="x", padx=10, pady=(0, 5))
+
+        # ===== 6. DISTANCIA ENTRE ÁRBOLES DE EXPANSIÓN =====
+        self.create_section(controls, "📐 6. Distancia entre Árboles")
+
+        ctk.CTkLabel(
+            controls,
+            text="Primer Árbol (del grafo actual):",
+            anchor="w"
+        ).pack(fill="x", padx=10, pady=(5, 0))
+
+        self.first_tree_status_label = ctk.CTkLabel(
+            controls,
+            text="No calculado",
+            font=("Segoe UI", 9, "italic"),
+            text_color="#e74c3c"
+        )
+        self.first_tree_status_label.pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="📋 Cargar MST como Árbol 1",
+            command=self.load_first_tree,
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="#000000"
+        ).pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkLabel(
+            controls,
+            text="Segundo Árbol (del grafo actual o similar):",
+            anchor="w"
+        ).pack(fill="x", padx=10, pady=(10, 0))
+
+        self.second_tree_status_label = ctk.CTkLabel(
+            controls,
+            text="No calculado",
+            font=("Segoe UI", 9, "italic"),
+            text_color="#e74c3c"
+        )
+        self.second_tree_status_label.pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="📋 Cargar MST como Árbol 2",
+            command=self.load_second_tree,
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="#000000"
+        ).pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="🔄 Usar Prim para Árbol 2",
+            command=self.use_prim_for_second_tree,
+            fg_color="#9b59b6",
+            hover_color="#8e44ad",
+            text_color="#000000"
+        ).pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="📊 Calcular Distancia",
+            command=self.calculate_tree_distance,
+            fg_color="#27ae60",
+            hover_color="#229954",
+            text_color="#000000"
+        ).pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkLabel(
+            controls,
+            text="Fórmula: (Unión - Intersección) / 2",
             font=("Segoe UI", 9, "italic"),
             text_color="#95a5a6"
         ).pack(fill="x", padx=10, pady=(0, 5))
@@ -1233,6 +1311,193 @@ class SpanningTreesContent(ctk.CTkFrame):
             self.graph = WeightedGraph()
             self.current_tree = None
             self.graph_pos = None  # Resetear posición del grafo
+            self.first_tree = None
+            self.second_tree = None
             self.draw_graph()
             self.results_text.delete("1.0", "end")
             self.show_status("✓ Grafo limpiado")
+
+    # ==================== DISTANCIA ENTRE ÁRBOLES ====================
+
+    def load_first_tree(self):
+        """Carga el MST actual como primer árbol"""
+        if len(self.graph.vertices) == 0:
+            messagebox.showwarning("Advertencia", "Primero debe crear un grafo")
+            return
+
+        if not self.graph.is_connected():
+            messagebox.showerror("Error", "El grafo no es conexo. No se puede generar un árbol de expansión")
+            return
+
+        # Calcular MST usando Kruskal
+        result = self.graph.minimum_spanning_tree("kruskal")
+
+        if not result["success"]:
+            messagebox.showerror("Error", result.get("error", "No se pudo calcular el MST"))
+            return
+
+        self.first_tree = set(result["edge_names"])
+
+        # Actualizar el estado
+        tree_info = f"✓ Árbol con {len(self.first_tree)} aristas\n"
+        tree_info += f"Peso total: {result['total_weight']}\n"
+        tree_info += f"Aristas: {', '.join(sorted(self.first_tree))}"
+
+        self.first_tree_status_label.configure(
+            text=tree_info,
+            text_color="#27ae60"
+        )
+
+        self.show_status("✓ Primer árbol (MST-Kruskal) cargado")
+        messagebox.showinfo(
+            "Árbol 1 Cargado",
+            f"MST cargado con {len(self.first_tree)} aristas\nPeso total: {result['total_weight']}"
+        )
+
+    def load_second_tree(self):
+        """Carga el MST actual como segundo árbol"""
+        if len(self.graph.vertices) == 0:
+            messagebox.showwarning("Advertencia", "Primero debe crear un grafo")
+            return
+
+        if not self.graph.is_connected():
+            messagebox.showerror("Error", "El grafo no es conexo. No se puede generar un árbol de expansión")
+            return
+
+        # Calcular MST usando Kruskal (igual que el primero)
+        result = self.graph.minimum_spanning_tree("kruskal")
+
+        if not result["success"]:
+            messagebox.showerror("Error", result.get("error", "No se pudo calcular el MST"))
+            return
+
+        self.second_tree = set(result["edge_names"])
+
+        # Actualizar el estado
+        tree_info = f"✓ Árbol con {len(self.second_tree)} aristas\n"
+        tree_info += f"Peso total: {result['total_weight']}\n"
+        tree_info += f"Aristas: {', '.join(sorted(self.second_tree))}"
+
+        self.second_tree_status_label.configure(
+            text=tree_info,
+            text_color="#27ae60"
+        )
+
+        self.show_status("✓ Segundo árbol (MST-Kruskal) cargado")
+        messagebox.showinfo(
+            "Árbol 2 Cargado",
+            f"MST cargado con {len(self.second_tree)} aristas\nPeso total: {result['total_weight']}"
+        )
+
+    def use_prim_for_second_tree(self):
+        """Genera un segundo árbol usando el algoritmo de Prim"""
+        if len(self.graph.vertices) == 0:
+            messagebox.showwarning("Advertencia", "Primero debe crear un grafo")
+            return
+
+        if not self.graph.is_connected():
+            messagebox.showerror("Error", "El grafo no es conexo. No se puede generar un árbol de expansión")
+            return
+
+        # Calcular MST usando Prim
+        result = self.graph.minimum_spanning_tree("prim")
+
+        if not result["success"]:
+            messagebox.showerror("Error", result.get("error", "No se pudo calcular el MST"))
+            return
+
+        self.second_tree = set(result["edge_names"])
+
+        # Actualizar el estado
+        tree_info = f"✓ Árbol con {len(self.second_tree)} aristas (Prim)\n"
+        tree_info += f"Peso total: {result['total_weight']}\n"
+        tree_info += f"Aristas: {', '.join(sorted(self.second_tree))}"
+
+        self.second_tree_status_label.configure(
+            text=tree_info,
+            text_color="#9b59b6"
+        )
+
+        self.show_status("✓ Segundo árbol (MST-Prim) cargado")
+        messagebox.showinfo(
+            "Árbol 2 Cargado (Prim)",
+            f"MST (Prim) cargado con {len(self.second_tree)} aristas\nPeso total: {result['total_weight']}"
+        )
+
+    def calculate_tree_distance(self):
+        """Calcula la distancia entre los dos árboles de expansión"""
+        if self.first_tree is None:
+            messagebox.showwarning("Advertencia", "Debe cargar el Primer Árbol")
+            return
+
+        if self.second_tree is None:
+            messagebox.showwarning("Advertencia", "Debe cargar el Segundo Árbol")
+            return
+
+        # Calcular distancia entre árboles
+        result = self.graph.tree_distance(self.first_tree, self.second_tree)
+
+        if not result["success"]:
+            messagebox.showerror("Error", result.get("error", "Error al calcular la distancia"))
+            return
+
+        # Mostrar resultados
+        output = "=" * 60 + "\n"
+        output += "📐 DISTANCIA ENTRE ÁRBOLES DE EXPANSIÓN\n"
+        output += "=" * 60 + "\n\n"
+
+        output += f"Fórmula: Distancia = (Unión - Intersección) / 2\n\n"
+
+        output += f"🌳 ÁRBOL 1 (Kruskal):\n"
+        output += f"  Aristas ({len(result['tree1_edges'])}): {', '.join(sorted(result['tree1_edges']))}\n\n"
+
+        output += f"🌳 ÁRBOL 2:\n"
+        output += f"  Aristas ({len(result['tree2_edges'])}): {', '.join(sorted(result['tree2_edges']))}\n\n"
+
+        output += f"📊 OPERACIONES DE CONJUNTOS:\n"
+        output += f"  Union (Árbol 1 ∪ Árbol 2):\n"
+        output += f"    Cantidad: {result['union_count']}\n"
+        output += f"    Aristas: {', '.join(result['union'])}\n\n"
+
+        output += f"  Intersección (Árbol 1 ∩ Árbol 2):\n"
+        output += f"    Cantidad: {result['intersection_count']}\n"
+        if result['intersection_count'] > 0:
+            output += f"    Aristas: {', '.join(result['intersection'])}\n"
+        else:
+            output += f"    Aristas: (ninguna)\n"
+        output += "\n"
+
+        output += f"  Diferencia Simétrica (Árbol 1 ⊕ Árbol 2):\n"
+        output += f"    Cantidad: {result['symmetric_difference_count']}\n"
+        if result['symmetric_difference_count'] > 0:
+            output += f"    Aristas: {', '.join(result['symmetric_difference'])}\n"
+        else:
+            output += f"    Aristas: (ninguna)\n"
+        output += "\n"
+
+        output += f"📏 RESULTADO:\n"
+        output += f"  Distancia = ({result['union_count']} - {result['intersection_count']}) / 2\n"
+        output += f"  Distancia = {result['union_count'] - result['intersection_count']} / 2\n"
+        output += f"  Distancia = {result['distance']}\n\n"
+
+        if result['is_identical']:
+            output += "✓ Los árboles son IDÉNTICOS (Distancia = 0)\n"
+        else:
+            output += f"⚠ Los árboles son DIFERENTES\n"
+
+        output += "=" * 60
+
+        # Mostrar en el área de resultados
+        self.results_text.delete("1.0", "end")
+        self.results_text.insert("1.0", output)
+
+        # Mostrar mensaje de éxito
+        messagebox.showinfo(
+            "Distancia Calculada",
+            f"Distancia entre árboles: {result['distance']}\n\n"
+            f"Unión: {result['union_count']} aristas\n"
+            f"Intersección: {result['intersection_count']} aristas\n"
+            f"Diferencia: {result['symmetric_difference_count']} aristas"
+        )
+
+        self.show_status(f"✓ Distancia calculada: {result['distance']}")
