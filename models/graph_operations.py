@@ -276,29 +276,42 @@ class GraphOperationsManager:
     def line_graph(self, g: GraphData) -> GraphData:
         """
         Grafo línea L(G): Operación unaria que genera un nuevo grafo donde:
-        - Cada arista de G se convierte en un vértice de L(G)
+        - Cada arista de G se convierte en un vértice de L(G) con nombre = concatenación de sus vértices
         - Dos vértices en L(G) están conectados si sus aristas correspondientes
           comparten un vértice en G
+        - El nombre de la arista en L(G) es el vértice compartido
 
-        Ejemplo: Si G tiene aristas a,b,c donde a=(u,v) y b=(v,w),
-        entonces L(G) tiene vértices a,b,c donde existe arista entre a-b
+        Ejemplo: G con aristas 1(d-b), 2(d-c), 3(b-c), 4(a-b)
+        L(G) tiene vértices: db, dc, bc, ab
+        Aristas: b (conecta db-ab y db-bc), d (conecta db-dc), c (conecta dc-bc)
         """
         result = GraphData(number=self.next_number, is_result=True)
 
         # Convertir cada arista de G en un vértice de L(G)
+        # El nombre del vértice es la concatenación ordenada de sus vértices finales
         edges_list = list(g.edges)
-        for i, edge in enumerate(edges_list):
-            result.vertices.add(edge.name)
+        edge_vertex_map = {}  # Mapeo de arista a nombre de vértice en L(G)
 
-        # Crear aristas en L(G) entre vértices que comparten una arista en G
-        edge_counter = 1
+        for edge in edges_list:
+            vertices = edge.get_vertices_list()
+            # Crear nombre del vértice como concatenación de sus extremos
+            vertex_name = vertices[0] + vertices[1]
+            result.vertices.add(vertex_name)
+            edge_vertex_map[edge] = vertex_name
+
+        # Crear aristas en L(G) entre vértices que comparten un vértice en G
         for i, edge1 in enumerate(edges_list):
             for edge2 in edges_list[i+1:]:
                 # Verificar si las aristas comparten un vértice
-                if edge1.vertices & edge2.vertices:  # Intersección no vacía
-                    new_edge = Edge(f"l{edge_counter}", edge1.name, edge2.name)
+                shared_vertices = edge1.vertices & edge2.vertices
+                if shared_vertices:
+                    # Las aristas comparten vértice(s)
+                    v1_name = edge_vertex_map[edge1]
+                    v2_name = edge_vertex_map[edge2]
+                    # La arista se llama con el vértice compartido
+                    shared_vertex = list(shared_vertices)[0]
+                    new_edge = Edge(shared_vertex, v1_name, v2_name)
                     result.edges.add(new_edge)
-                    edge_counter += 1
 
         self.graphs[self.next_number] = result
         self.next_number += 1
