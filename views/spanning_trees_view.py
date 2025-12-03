@@ -25,6 +25,7 @@ class SpanningTreesContent(ctk.CTkFrame):
 
         self.graph = WeightedGraph()
         self.current_tree = None  # Árbol actual para visualización
+        self.graph_pos = None  # Posición fija del grafo para mantener la forma
 
         self.setup_ui()
 
@@ -45,8 +46,8 @@ class SpanningTreesContent(ctk.CTkFrame):
         controls = ctk.CTkScrollableFrame(self, corner_radius=10)
         controls.grid(row=0, column=0, sticky="nsew", padx=(0, 10), pady=0)
 
-        # ===== CONSTRUCCIÓN =====
-        self.create_section(controls, "🔨 Construcción del Grafo")
+        # ===== 1. SE LE DEBEN PEDIR AL USUARIO LOS DATOS DEL GRAFO =====
+        self.create_section(controls, "🔨 1. Datos del Grafo")
 
         ctk.CTkLabel(controls, text="Vértice:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
         self.vertex_entry = ctk.CTkEntry(controls, placeholder_text="Nombre del vértice")
@@ -64,12 +65,27 @@ class SpanningTreesContent(ctk.CTkFrame):
         self.edge_name_entry = ctk.CTkEntry(controls, placeholder_text="Nombre (ej: e1)")
         self.edge_name_entry.pack(fill="x", padx=10, pady=5)
 
-        self.edge_v1_entry = ctk.CTkEntry(controls, placeholder_text="Vértice 1")
-        self.edge_v1_entry.pack(fill="x", padx=10, pady=5)
+        # Lista desplegable para Vértice 1
+        ctk.CTkLabel(controls, text="Vértice 1:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
+        self.edge_v1_var = ctk.StringVar(value="")
+        self.edge_v1_combo = ctk.CTkComboBox(
+            controls,
+            variable=self.edge_v1_var,
+            values=[]
+        )
+        self.edge_v1_combo.pack(fill="x", padx=10, pady=5)
 
-        self.edge_v2_entry = ctk.CTkEntry(controls, placeholder_text="Vértice 2")
-        self.edge_v2_entry.pack(fill="x", padx=10, pady=5)
+        # Lista desplegable para Vértice 2
+        ctk.CTkLabel(controls, text="Vértice 2:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
+        self.edge_v2_var = ctk.StringVar(value="")
+        self.edge_v2_combo = ctk.CTkComboBox(
+            controls,
+            variable=self.edge_v2_var,
+            values=[]
+        )
+        self.edge_v2_combo.pack(fill="x", padx=10, pady=5)
 
+        ctk.CTkLabel(controls, text="Peso:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
         self.edge_weight_entry = ctk.CTkEntry(controls, placeholder_text="Peso (ej: 5)")
         self.edge_weight_entry.pack(fill="x", padx=10, pady=5)
 
@@ -81,35 +97,44 @@ class SpanningTreesContent(ctk.CTkFrame):
             hover_color="#2980b9"
         ).pack(fill="x", padx=10, pady=5)
 
-        # ===== ÁRBOLES GENERADORES =====
-        self.create_section(controls, "🌳 Árboles Generadores")
+        # ===== 2. EN BASE A ESE GRAFO SE DEBE GENERAR EL ÁRBOL MÍNIMO Y EL COMPLEMENTO =====
+        self.create_section(controls, "🌳 2. Árbol Mínimo y Complemento")
 
         ctk.CTkButton(
             controls,
-            text="MST - Kruskal",
+            text="Generar Árbol Mínimo (MST)",
             command=lambda: self.calculate_mst("kruskal"),
             fg_color="#9b59b6",
             hover_color="#8e44ad"
         ).pack(fill="x", padx=10, pady=5)
 
-        ctk.CTkButton(
+        ctk.CTkLabel(
             controls,
-            text="MST - Prim",
-            command=lambda: self.calculate_mst("prim"),
-            fg_color="#9b59b6",
-            hover_color="#8e44ad"
-        ).pack(fill="x", padx=10, pady=5)
+            text="árbol + complemento = grafo",
+            font=("Segoe UI", 10, "italic"),
+            text_color="#95a5a6"
+        ).pack(fill="x", padx=10, pady=(0, 5))
+
+        # ===== 3. DEL ÁRBOL SE SACAN LAS RAMAS, DEL COMPLEMENTO SE SACAN LAS CUERDAS =====
+        self.create_section(controls, "🌿 3. Ramas y Cuerdas")
 
         ctk.CTkButton(
             controls,
-            text="Árbol Generador Máximo",
-            command=self.calculate_maximum_tree,
-            fg_color="#9b59b6",
-            hover_color="#8e44ad"
+            text="Identificar Ramas y Cuerdas",
+            command=self.identify_branches_chords,
+            fg_color="#16a085",
+            hover_color="#138f7a"
         ).pack(fill="x", padx=10, pady=5)
 
-        # ===== CENTRO Y CENTROIDE =====
-        self.create_section(controls, "🎯 Centro y Centroide")
+        ctk.CTkLabel(
+            controls,
+            text="Ramas: aristas del árbol\nCuerdas: aristas del complemento",
+            font=("Segoe UI", 9, "italic"),
+            text_color="#95a5a6"
+        ).pack(fill="x", padx=10, pady=(0, 5))
+
+        # ===== 4. SEÑALAR EL CENTRO DEL ÁRBOL =====
+        self.create_section(controls, "🎯 4. Centro del Árbol")
 
         ctk.CTkButton(
             controls,
@@ -119,42 +144,44 @@ class SpanningTreesContent(ctk.CTkFrame):
             hover_color="#d35400"
         ).pack(fill="x", padx=10, pady=5)
 
+        # ===== 5. ALGORITMO DE FLOYD =====
+        self.create_section(controls, "🔍 5. Algoritmo de Floyd")
+
         ctk.CTkButton(
             controls,
-            text="Calcular Centroide",
-            command=self.calculate_centroid,
-            fg_color="#e67e22",
-            hover_color="#d35400"
+            text="Ejecutar Floyd-Warshall",
+            command=self.run_floyd_warshall,
+            fg_color="#c0392b",
+            hover_color="#a93226"
         ).pack(fill="x", padx=10, pady=5)
-
-        # ===== DISTANCIAS ENTRE ÁRBOLES =====
-        self.create_section(controls, "📏 Distancia entre Árboles")
 
         ctk.CTkLabel(
             controls,
-            text="⚠️ Genera todos los árboles\n(lento para grafos grandes)",
-            font=("Segoe UI", 10),
-            text_color="#e74c3c"
-        ).pack(fill="x", padx=10, pady=5)
+            text="Encuentra caminos más cortos",
+            font=("Segoe UI", 9, "italic"),
+            text_color="#95a5a6"
+        ).pack(fill="x", padx=10, pady=(0, 5))
+
+        # ===== 6. MOSTRAR TABLA CON BOTONES =====
+        self.create_section(controls, "📊 6. Tabla de Análisis")
 
         ctk.CTkButton(
             controls,
-            text="Calcular Distancias",
-            command=self.calculate_tree_distances,
-            fg_color="#16a085",
-            hover_color="#138f7a"
+            text="Mostrar Tabla con Botones",
+            command=self.show_analysis_table,
+            fg_color="#c0392b",
+            hover_color="#a93226"
         ).pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkLabel(
+            controls,
+            text="Excentricidad, radio, distancias...",
+            font=("Segoe UI", 9, "italic"),
+            text_color="#95a5a6"
+        ).pack(fill="x", padx=10, pady=(0, 5))
 
         # ===== UTILIDADES =====
         self.create_section(controls, "🔧 Utilidades")
-
-        ctk.CTkButton(
-            controls,
-            text="ℹ️ Info del Grafo",
-            command=self.show_graph_info,
-            fg_color="#34495e",
-            hover_color="#2c3e50"
-        ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
             controls,
@@ -240,14 +267,20 @@ class SpanningTreesContent(ctk.CTkFrame):
 
         self.graph.add_vertex(vertex)
         self.vertex_entry.delete(0, 'end')
+
+        # Actualizar las listas desplegables de vértices
+        vertices_list = sorted(list(self.graph.vertices))
+        self.edge_v1_combo.configure(values=vertices_list)
+        self.edge_v2_combo.configure(values=vertices_list)
+
         self.draw_graph()
         self.show_status(f"✓ Vértice '{vertex}' agregado")
 
     def add_edge(self):
         """Agrega una arista ponderada al grafo"""
         edge_name = self.edge_name_entry.get().strip()
-        v1 = self.edge_v1_entry.get().strip()
-        v2 = self.edge_v2_entry.get().strip()
+        v1 = self.edge_v1_var.get().strip()
+        v2 = self.edge_v2_var.get().strip()
         weight_str = self.edge_weight_entry.get().strip()
 
         if not edge_name or not v1 or not v2 or not weight_str:
@@ -269,8 +302,8 @@ class SpanningTreesContent(ctk.CTkFrame):
             return
 
         self.edge_name_entry.delete(0, 'end')
-        self.edge_v1_entry.delete(0, 'end')
-        self.edge_v2_entry.delete(0, 'end')
+        self.edge_v1_var.set("")
+        self.edge_v2_var.set("")
         self.edge_weight_entry.delete(0, 'end')
         self.draw_graph()
         self.show_status(f"✓ Arista '{edge_name}' agregada")
@@ -396,6 +429,262 @@ class SpanningTreesContent(ctk.CTkFrame):
         self.draw_graph(highlight_vertices=set(result["centroid_vertices"]))
         self.notebook.set("Resultados")
 
+    # ==================== RAMAS Y CUERDAS ====================
+
+    def identify_branches_chords(self):
+        """Identifica ramas del árbol y cuerdas del complemento"""
+        if len(self.graph.vertices) == 0:
+            messagebox.showwarning("Advertencia", "El grafo está vacío")
+            return
+
+        if not self.graph.is_connected():
+            messagebox.showerror("Error", "El grafo debe ser conexo")
+            return
+
+        # Si ya hay un árbol calculado, usarlo; sino calcular MST
+        tree_edges = self.current_tree if self.current_tree else None
+
+        result = self.graph.identify_branches_and_chords(tree_edges)
+
+        if not result["success"]:
+            messagebox.showerror("Error", result["error"])
+            return
+
+        output = "RAMAS Y CUERDAS DEL GRAFO\n\n"
+
+        output += f"RAMAS (Aristas del árbol): {result['num_branches']}\n"
+        if result["branches"]:
+            for branch in result["branches"]:
+                v1, v2 = branch["vertices"]
+                output += f"  {branch['name']}: {v1} - {v2} (peso: {branch['weight']:.2f})\n"
+        else:
+            output += "  (ninguna)\n"
+
+        output += f"\nCUERDAS (Aristas del complemento): {result['num_chords']}\n"
+        if result["chords"]:
+            for chord in result["chords"]:
+                v1, v2 = chord["vertices"]
+                output += f"  {chord['name']}: {v1} - {v2} (peso: {chord['weight']:.2f})\n"
+        else:
+            output += "  (ninguna)\n"
+
+        output += f"\nTotal de aristas: {result['num_branches'] + result['num_chords']}\n"
+
+        self.show_results(output)
+
+        # Actualizar árbol actual y visualizar
+        self.current_tree = result["tree_edges"]
+        self.draw_graph(highlight_edges=self.current_tree)
+        self.notebook.set("Resultados")
+
+    # ==================== ALGORITMO DE FLOYD-WARSHALL ====================
+
+    def run_floyd_warshall(self):
+        """Ejecuta el algoritmo de Floyd-Warshall"""
+        if len(self.graph.vertices) == 0:
+            messagebox.showwarning("Advertencia", "El grafo está vacío")
+            return
+
+        if not self.graph.is_connected():
+            messagebox.showerror("Error", "El grafo debe ser conexo")
+            return
+
+        result = self.graph.floyd_warshall()
+
+        if not result["success"]:
+            messagebox.showerror("Error", result["error"])
+            return
+
+        vertices = result["vertices"]
+        dist_matrix = result["distance_matrix"]
+
+        output = "ALGORITMO DE FLOYD-WARSHALL\n\n"
+        output += "Matriz de distancias más cortas:\n\n"
+
+        # Encabezado
+        output += "      " + "  ".join(f"{v:>6}" for v in vertices) + "\n"
+        output += "    " + "-" * (8 * len(vertices)) + "\n"
+
+        # Filas
+        for i, v in enumerate(vertices):
+            output += f"{v:>4} |"
+            for j in range(len(vertices)):
+                dist = dist_matrix[i][j]
+                if dist == float('inf'):
+                    output += "    ∞ "
+                else:
+                    output += f"{dist:>6.1f}"
+            output += "\n"
+
+        output += f"\nRadio del grafo: {result['radius']:.2f}\n"
+        output += f"Diámetro del grafo: {result['diameter']:.2f}\n\n"
+
+        output += "Excentricidades:\n"
+        for v, ecc in result["eccentricities"].items():
+            if ecc is not None:
+                output += f"  {v}: {ecc:.2f}\n"
+
+        self.show_results(output)
+        self.notebook.set("Resultados")
+
+    def show_analysis_table(self):
+        """Muestra tabla interactiva de análisis completo"""
+        if len(self.graph.vertices) == 0:
+            messagebox.showwarning("Advertencia", "El grafo está vacío")
+            return
+
+        if not self.graph.is_connected():
+            messagebox.showerror("Error", "El grafo debe ser conexo")
+            return
+
+        result = self.graph.get_analysis_table()
+
+        if not result["success"]:
+            messagebox.showerror("Error", result["error"])
+            return
+
+        # Crear ventana de tabla
+        table_window = ctk.CTkToplevel(self)
+        table_window.title("Tabla de Análisis del Grafo")
+        table_window.geometry("900x600")
+
+        # Frame principal con scroll
+        main_frame = ctk.CTkScrollableFrame(table_window)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Título
+        title_label = ctk.CTkLabel(
+            main_frame,
+            text="TABLA DE ANÁLISIS COMPLETO",
+            font=("Segoe UI", 18, "bold")
+        )
+        title_label.pack(pady=10)
+
+        # Información general
+        info_frame = ctk.CTkFrame(main_frame, corner_radius=10)
+        info_frame.pack(fill="x", pady=10, padx=10)
+
+        general_info = f"""Radio: {result['radius']:.2f}    |    Diámetro: {result['diameter']:.2f}
+Centro: {', '.join(result['center_vertices'])}    |    Centroide: {', '.join(result['centroid_vertices'])}"""
+
+        ctk.CTkLabel(
+            info_frame,
+            text=general_info,
+            font=("Segoe UI", 12)
+        ).pack(pady=10, padx=10)
+
+        # Tabla de vértices
+        vertices = result["vertices"]
+        vertex_analysis = result["vertex_analysis"]
+
+        for vertex in vertices:
+            data = vertex_analysis[vertex]
+
+            # Frame para cada vértice
+            vertex_frame = ctk.CTkFrame(main_frame, corner_radius=10)
+            vertex_frame.pack(fill="x", pady=5, padx=10)
+
+            # Color especial si es centro o centroide
+            if data["is_center"] or data["is_centroid"]:
+                vertex_frame.configure(fg_color="#e67e22")
+
+            # Header del vértice
+            header_frame = ctk.CTkFrame(vertex_frame, fg_color="transparent")
+            header_frame.pack(fill="x", padx=10, pady=5)
+
+            # Nombre y etiquetas
+            labels = []
+            if data["is_center"]:
+                labels.append("CENTRO")
+            if data["is_centroid"]:
+                labels.append("CENTROIDE")
+            label_str = f" ({', '.join(labels)})" if labels else ""
+
+            ctk.CTkLabel(
+                header_frame,
+                text=f"Vértice {vertex}{label_str}",
+                font=("Segoe UI", 14, "bold")
+            ).pack(side="left", padx=5)
+
+            ctk.CTkLabel(
+                header_frame,
+                text=f"Excentricidad: {data['eccentricity']:.2f}",
+                font=("Segoe UI", 12)
+            ).pack(side="left", padx=20)
+
+            ctk.CTkLabel(
+                header_frame,
+                text=f"Suma distancias: {data['sum_distances']:.2f}",
+                font=("Segoe UI", 12)
+            ).pack(side="left", padx=20)
+
+            # Botones de acción
+            button_frame = ctk.CTkFrame(vertex_frame, fg_color="transparent")
+            button_frame.pack(fill="x", padx=10, pady=5)
+
+            # Botón para mostrar distancias
+            def show_distances(v=vertex, dists=data['distances']):
+                dist_text = f"DISTANCIAS DESDE {v}:\n\n"
+                for other_v, dist in sorted(dists.items()):
+                    if dist == 0:
+                        dist_text += f"{other_v}: 0 (mismo vértice)\n"
+                    elif dist == float('inf'):
+                        dist_text += f"{other_v}: ∞ (no alcanzable)\n"
+                    else:
+                        dist_text += f"{other_v}: {dist:.2f}\n"
+
+                # Mostrar en ventana emergente
+                dist_window = ctk.CTkToplevel(table_window)
+                dist_window.title(f"Distancias desde {v}")
+                dist_window.geometry("400x500")
+
+                text_box = ctk.CTkTextbox(dist_window, font=("Consolas", 11))
+                text_box.pack(fill="both", expand=True, padx=10, pady=10)
+                text_box.insert("1.0", dist_text)
+                text_box.configure(state="disabled")
+
+            ctk.CTkButton(
+                button_frame,
+                text="Ver Distancias",
+                command=show_distances,
+                width=120,
+                fg_color="#3498db",
+                hover_color="#2980b9"
+            ).pack(side="left", padx=5)
+
+            # Botón para resaltar en grafo
+            def highlight_vertex(v=vertex):
+                self.draw_graph(highlight_vertices={v})
+                table_window.lift()
+
+            ctk.CTkButton(
+                button_frame,
+                text="Resaltar en Grafo",
+                command=highlight_vertex,
+                width=120,
+                fg_color="#2ecc71",
+                hover_color="#27ae60"
+            ).pack(side="left", padx=5)
+
+            # Mostrar preview de distancias
+            preview_text = "Distancias: "
+            preview_dists = []
+            for other_v, dist in sorted(data['distances'].items())[:5]:
+                if dist != 0 and dist != float('inf'):
+                    preview_dists.append(f"{other_v}={dist:.1f}")
+
+            if preview_dists:
+                preview_text += ", ".join(preview_dists)
+                if len(data['distances']) > 5:
+                    preview_text += "..."
+
+            ctk.CTkLabel(
+                vertex_frame,
+                text=preview_text,
+                font=("Segoe UI", 10),
+                text_color="#95a5a6"
+            ).pack(fill="x", padx=10, pady=(0, 5))
+
     # ==================== DISTANCIAS ENTRE ÁRBOLES ====================
 
     def calculate_tree_distances(self):
@@ -480,7 +769,7 @@ class SpanningTreesContent(ctk.CTkFrame):
     # ==================== VISUALIZACIÓN ====================
 
     def draw_graph(self, highlight_edges=None, highlight_vertices=None):
-        """Dibuja el grafo ponderado"""
+        """Dibuja el grafo ponderado con posición fija"""
         self.ax.clear()
 
         if len(self.graph.vertices) == 0:
@@ -493,6 +782,7 @@ class SpanningTreesContent(ctk.CTkFrame):
             )
             self.ax.axis('off')
             self.canvas.draw()
+            self.graph_pos = None  # Resetear posición
             return
 
         G = nx.Graph()
@@ -503,7 +793,35 @@ class SpanningTreesContent(ctk.CTkFrame):
             G.add_edge(v1, v2, name=edge_name, weight=weight)
             edge_labels[(v1, v2)] = f"{edge_name}\n({weight:.1f})"
 
-        pos = nx.spring_layout(G, k=2, iterations=50)
+        # Calcular o reutilizar posición del grafo
+        # Si el conjunto de vértices cambió, recalcular
+        current_vertices = set(self.graph.vertices)
+
+        if self.graph_pos is None:
+            # Primera vez o después de limpiar
+            self.graph_pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
+        else:
+            # Verificar si hay vértices nuevos o eliminados
+            stored_vertices = set(self.graph_pos.keys())
+
+            if current_vertices != stored_vertices:
+                # Hay cambios en vértices
+                new_vertices = current_vertices - stored_vertices
+                removed_vertices = stored_vertices - current_vertices
+
+                if new_vertices:
+                    # Calcular posición solo para nuevos vértices
+                    temp_pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
+                    # Mantener posiciones antiguas y agregar nuevas
+                    for v in new_vertices:
+                        self.graph_pos[v] = temp_pos[v]
+
+                if removed_vertices:
+                    # Eliminar vértices que ya no existen
+                    for v in removed_vertices:
+                        del self.graph_pos[v]
+
+        pos = self.graph_pos
 
         # Colores de vértices
         node_colors = []
@@ -631,6 +949,7 @@ class SpanningTreesContent(ctk.CTkFrame):
         if messagebox.askyesno("Confirmar", "¿Limpiar todo el grafo?"):
             self.graph = WeightedGraph()
             self.current_tree = None
+            self.graph_pos = None  # Resetear posición del grafo
             self.draw_graph()
             self.results_text.delete("1.0", "end")
             self.show_status("✓ Grafo limpiado")

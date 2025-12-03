@@ -235,10 +235,10 @@ class CollapsibleSidebar(ctk.CTkFrame):
         )
         self.btn_grafos_operaciones.grid(row=0, column=0, sticky="ew", padx=8, pady=(8, 4))
 
-        # Botón para Teoría de Grafos
-        self.btn_grafos_teoria = ctk.CTkButton(
+        # Botón para Matrices
+        self.btn_grafos_matrices = ctk.CTkButton(
             self.panel_grafos,
-            text="Teoría de Grafos",
+            text="Matrices",
             height=34,
             fg_color="transparent",
             hover_color=("#e5f0ff", "#16324a"),
@@ -246,12 +246,12 @@ class CollapsibleSidebar(ctk.CTkFrame):
             anchor="w",
             command=lambda: self.on_select("grafos", "teoria"),
         )
-        self.btn_grafos_teoria.grid(row=1, column=0, sticky="ew", padx=8, pady=4)
+        self.btn_grafos_matrices.grid(row=1, column=0, sticky="ew", padx=8, pady=4)
 
-        # Botón para Árboles de Expansión
+        # Botón para Árboles a partir de grafos
         self.btn_grafos_arboles = ctk.CTkButton(
             self.panel_grafos,
-            text="Árboles de Expansión",
+            text="Árboles a partir de grafos",
             height=34,
             fg_color="transparent",
             hover_color=("#e5f0ff", "#16324a"),
@@ -281,7 +281,7 @@ class CollapsibleSidebar(ctk.CTkFrame):
             "externas:dinamicas": self.btn_ext_dynamic,
             "externas:indices": self.btn_ext_indices,
             "grafos:operaciones": self.btn_grafos_operaciones,
-            "grafos:teoria": self.btn_grafos_teoria,
+            "grafos:teoria": self.btn_grafos_matrices,
             "grafos:arboles": self.btn_grafos_arboles,
         }
         self.apply_theme_colors()

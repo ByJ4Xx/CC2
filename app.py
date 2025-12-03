@@ -27,6 +27,9 @@ class App(ctk.CTk):
         self.title("Algoritmos · Búsquedas y Grafos")
         self.after(100, lambda: self.state("zoomed"))
 
+        # Configurar protocolo de cierre
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
         # Apariencia y tema
         ctk.set_appearance_mode("Light")
         ctk.set_default_color_theme("dark-blue")
@@ -97,6 +100,19 @@ class App(ctk.CTk):
         mapping = {"Sistema": "System", "Claro": "Light", "Oscuro": "Dark"}
         ctk.set_appearance_mode(mapping.get(mode_label, "Claro"))
         self.sidebar.apply_theme_colors()
+
+    def on_closing(self):
+        """Maneja el cierre correcto de la aplicación"""
+        try:
+            # Cerrar todas las figuras de matplotlib
+            import matplotlib.pyplot as plt
+            plt.close('all')
+        except:
+            pass
+
+        # Destruir la ventana principal
+        self.quit()
+        self.destroy()
 
 
 def main():

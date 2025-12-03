@@ -16,14 +16,15 @@ from graph_theory import GraphTheory
 
 
 class GraphTheoryContent(ctk.CTkFrame):
-    """Contenido para teoría de grafos"""
+    """Contenido para teoría de grafos - Matrices"""
 
-    title = "Teoría de Grafos"
+    title = "Matrices"
 
     def __init__(self, parent):
         super().__init__(parent, fg_color="transparent")
 
         self.graph = GraphTheory()
+        self.graph_pos = None  # Posición fija del grafo
 
         self.setup_ui()
 
@@ -44,8 +45,8 @@ class GraphTheoryContent(ctk.CTkFrame):
         controls = ctk.CTkScrollableFrame(self, corner_radius=10)
         controls.grid(row=0, column=0, sticky="nsew", padx=(0, 10), pady=0)
 
-        # ===== CONSTRUCCIÓN =====
-        self.create_section(controls, "🔨 Construcción del Grafo")
+        # ===== CONSTRUCCIÓN DEL GRAFO =====
+        self.create_section(controls, "🔨 Datos del Grafo")
 
         ctk.CTkLabel(controls, text="Vértice:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
         self.vertex_entry = ctk.CTkEntry(controls, placeholder_text="Nombre del vértice")
@@ -63,11 +64,25 @@ class GraphTheoryContent(ctk.CTkFrame):
         self.edge_name_entry = ctk.CTkEntry(controls, placeholder_text="Nombre (ej: e1)")
         self.edge_name_entry.pack(fill="x", padx=10, pady=5)
 
-        self.edge_v1_entry = ctk.CTkEntry(controls, placeholder_text="Vértice 1")
-        self.edge_v1_entry.pack(fill="x", padx=10, pady=5)
+        # Lista desplegable para Vértice 1
+        ctk.CTkLabel(controls, text="Vértice 1:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
+        self.edge_v1_var = ctk.StringVar(value="")
+        self.edge_v1_combo = ctk.CTkComboBox(
+            controls,
+            variable=self.edge_v1_var,
+            values=[]
+        )
+        self.edge_v1_combo.pack(fill="x", padx=10, pady=5)
 
-        self.edge_v2_entry = ctk.CTkEntry(controls, placeholder_text="Vértice 2")
-        self.edge_v2_entry.pack(fill="x", padx=10, pady=5)
+        # Lista desplegable para Vértice 2
+        ctk.CTkLabel(controls, text="Vértice 2:", anchor="w").pack(fill="x", padx=10, pady=(5, 0))
+        self.edge_v2_var = ctk.StringVar(value="")
+        self.edge_v2_combo = ctk.CTkComboBox(
+            controls,
+            variable=self.edge_v2_var,
+            values=[]
+        )
+        self.edge_v2_combo.pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
             controls,
@@ -77,27 +92,47 @@ class GraphTheoryContent(ctk.CTkFrame):
             hover_color="#2980b9"
         ).pack(fill="x", padx=10, pady=5)
 
-        # ===== CIRCUITOS =====
-        self.create_section(controls, "🔄 Circuitos")
+        # ===== MATRICES =====
+        self.create_section(controls, "📊 Matrices Fundamentales")
 
+        # Matriz de Incidencia
         ctk.CTkButton(
             controls,
-            text="Encontrar Circuitos",
-            command=self.find_circuits,
-            fg_color="#9b59b6",
-            hover_color="#8e44ad"
+            text="Matriz de Incidencia (V-A)",
+            command=self.show_vertex_incidence,
+            fg_color="#16a085",
+            hover_color="#138f7a"
         ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
             controls,
-            text="Circuitos Fundamentales",
-            command=self.find_fundamental_cycles,
-            fg_color="#9b59b6",
-            hover_color="#8e44ad"
+            text="Matriz de Incidencia (A-V)",
+            command=self.show_edge_incidence,
+            fg_color="#16a085",
+            hover_color="#138f7a"
         ).pack(fill="x", padx=10, pady=5)
 
-        # ===== CONJUNTOS DE CORTE =====
-        self.create_section(controls, "✂️ Conjuntos de Corte")
+        # Matriz de Adyacencia
+        self.create_section(controls, "🔗 Matriz de Adyacencia")
+
+        ctk.CTkButton(
+            controls,
+            text="Vértices",
+            command=self.show_vertex_adjacency,
+            fg_color="#3498db",
+            hover_color="#2980b9"
+        ).pack(fill="x", padx=10, pady=5)
+
+        ctk.CTkButton(
+            controls,
+            text="Aristas",
+            command=self.show_edge_adjacency,
+            fg_color="#3498db",
+            hover_color="#2980b9"
+        ).pack(fill="x", padx=10, pady=5)
+
+        # Matriz de Conjuntos de Corte
+        self.create_section(controls, "✂️ Matriz de Conjuntos de Corte")
 
         ctk.CTkButton(
             controls,
@@ -115,39 +150,23 @@ class GraphTheoryContent(ctk.CTkFrame):
             hover_color="#d35400"
         ).pack(fill="x", padx=10, pady=5)
 
-        # ===== MATRICES =====
-        self.create_section(controls, "📊 Matrices")
+        # Matriz de Circuitos
+        self.create_section(controls, "🔄 Matriz de Circuitos")
 
         ctk.CTkButton(
             controls,
-            text="Matriz Adyacencia (Vértices)",
-            command=self.show_vertex_adjacency,
-            fg_color="#16a085",
-            hover_color="#138f7a"
+            text="Encontrar Circuitos",
+            command=self.find_circuits,
+            fg_color="#9b59b6",
+            hover_color="#8e44ad"
         ).pack(fill="x", padx=10, pady=5)
 
         ctk.CTkButton(
             controls,
-            text="Matriz Adyacencia (Aristas)",
-            command=self.show_edge_adjacency,
-            fg_color="#16a085",
-            hover_color="#138f7a"
-        ).pack(fill="x", padx=10, pady=5)
-
-        ctk.CTkButton(
-            controls,
-            text="Matriz Incidencia (V-A)",
-            command=self.show_vertex_incidence,
-            fg_color="#16a085",
-            hover_color="#138f7a"
-        ).pack(fill="x", padx=10, pady=5)
-
-        ctk.CTkButton(
-            controls,
-            text="Matriz Incidencia (A-V)",
-            command=self.show_edge_incidence,
-            fg_color="#16a085",
-            hover_color="#138f7a"
+            text="Circuitos Fundamentales",
+            command=self.find_fundamental_cycles,
+            fg_color="#9b59b6",
+            hover_color="#8e44ad"
         ).pack(fill="x", padx=10, pady=5)
 
         # ===== UTILIDADES =====
@@ -237,14 +256,20 @@ class GraphTheoryContent(ctk.CTkFrame):
 
         self.graph.add_vertex(vertex)
         self.vertex_entry.delete(0, 'end')
+
+        # Actualizar las listas desplegables de vértices
+        vertices_list = sorted(list(self.graph.vertices))
+        self.edge_v1_combo.configure(values=vertices_list)
+        self.edge_v2_combo.configure(values=vertices_list)
+
         self.draw_graph()
         self.show_status(f"✓ Vértice '{vertex}' agregado")
 
     def add_edge(self):
         """Agrega una arista al grafo"""
         edge_name = self.edge_name_entry.get().strip()
-        v1 = self.edge_v1_entry.get().strip()
-        v2 = self.edge_v2_entry.get().strip()
+        v1 = self.edge_v1_var.get().strip()
+        v2 = self.edge_v2_var.get().strip()
 
         if not edge_name or not v1 or not v2:
             messagebox.showwarning("Advertencia", "Completa todos los campos")
@@ -259,8 +284,8 @@ class GraphTheoryContent(ctk.CTkFrame):
             return
 
         self.edge_name_entry.delete(0, 'end')
-        self.edge_v1_entry.delete(0, 'end')
-        self.edge_v2_entry.delete(0, 'end')
+        self.edge_v1_var.set("")
+        self.edge_v2_var.set("")
         self.draw_graph()
         self.show_status(f"✓ Arista '{edge_name}' agregada")
 
@@ -470,7 +495,7 @@ class GraphTheoryContent(ctk.CTkFrame):
     # ==================== VISUALIZACIÓN ====================
 
     def draw_graph(self):
-        """Dibuja el grafo"""
+        """Dibuja el grafo con posición fija"""
         self.ax.clear()
 
         if len(self.graph.vertices) == 0:
@@ -483,6 +508,7 @@ class GraphTheoryContent(ctk.CTkFrame):
             )
             self.ax.axis('off')
             self.canvas.draw()
+            self.graph_pos = None  # Resetear posición
             return
 
         G = nx.Graph()
@@ -493,7 +519,32 @@ class GraphTheoryContent(ctk.CTkFrame):
             G.add_edge(v1, v2)
             edge_labels[(v1, v2)] = edge_name
 
-        pos = nx.spring_layout(G, k=2, iterations=50)
+        # Calcular o reutilizar posición del grafo
+        current_vertices = set(self.graph.vertices)
+
+        if self.graph_pos is None:
+            # Primera vez o después de limpiar
+            self.graph_pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
+        else:
+            # Verificar si hay cambios en vértices
+            stored_vertices = set(self.graph_pos.keys())
+
+            if current_vertices != stored_vertices:
+                new_vertices = current_vertices - stored_vertices
+                removed_vertices = stored_vertices - current_vertices
+
+                if new_vertices:
+                    # Calcular posición para nuevos vértices
+                    temp_pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
+                    for v in new_vertices:
+                        self.graph_pos[v] = temp_pos[v]
+
+                if removed_vertices:
+                    # Eliminar vértices que ya no existen
+                    for v in removed_vertices:
+                        del self.graph_pos[v]
+
+        pos = self.graph_pos
 
         nx.draw_networkx_nodes(
             G, pos, ax=self.ax,
@@ -577,6 +628,7 @@ class GraphTheoryContent(ctk.CTkFrame):
         """Limpia todo"""
         if messagebox.askyesno("Confirmar", "¿Limpiar todo el grafo?"):
             self.graph = GraphTheory()
+            self.graph_pos = None  # Resetear posición del grafo
             self.draw_graph()
             self.results_text.delete("1.0", "end")
             self.show_status("✓ Grafo limpiado")

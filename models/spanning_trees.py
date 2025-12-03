@@ -337,6 +337,200 @@ class WeightedGraph:
             "min_distance": min([d["distance"] for d in distances]) if distances else 0
         }
 
+    # ==================== RAMAS Y CUERDAS ====================
+
+    def identify_branches_and_chords(self, spanning_tree_edges: Optional[Set[str]] = None) -> Dict:
+        """
+        Identifica las ramas (aristas del árbol) y cuerdas (aristas del complemento)
+
+        Args:
+            spanning_tree_edges: Conjunto de nombres de aristas del árbol.
+                                Si es None, se calcula el MST automáticamente.
+
+        Returns:
+            Dict con información de ramas y cuerdas
+        """
+        G = self._to_networkx()
+
+        if not nx.is_connected(G):
+            return {
+                "success": False,
+                "error": "El grafo no es conexo"
+            }
+
+        # Si no se proporciona árbol, calcular MST
+        if spanning_tree_edges is None:
+            mst_result = self.minimum_spanning_tree()
+            if not mst_result["success"]:
+                return mst_result
+            spanning_tree_edges = set(mst_result["edge_names"])
+
+        # Separar ramas y cuerdas
+        branches = []
+        chords = []
+
+        for edge_name, (v1, v2, weight) in self.edges.items():
+            edge_info = {
+                "name": edge_name,
+                "vertices": [v1, v2],
+                "weight": weight
+            }
+
+            if edge_name in spanning_tree_edges:
+                branches.append(edge_info)
+            else:
+                chords.append(edge_info)
+
+        return {
+            "success": True,
+            "branches": branches,
+            "chords": chords,
+            "num_branches": len(branches),
+            "num_chords": len(chords),
+            "tree_edges": spanning_tree_edges
+        }
+
+    # ==================== ALGORITMO DE FLOYD-WARSHALL ====================
+
+    def floyd_warshall(self) -> Dict:
+        """
+        Implementa el algoritmo de Floyd-Warshall para encontrar
+        caminos más cortos entre todos los pares de vértices.
+
+        Returns:
+            Dict con matrices de distancias y caminos
+        """
+        vertices_list = sorted(list(self.vertices))
+        n = len(vertices_list)
+
+        if n == 0:
+            return {
+                "success": False,
+                "error": "El grafo está vacío"
+            }
+
+        # Inicializar matriz de distancias con infinito
+        INF = float('inf')
+        dist = [[INF for _ in range(n)] for _ in range(n)]
+        next_vertex = [[None for _ in range(n)] for _ in range(n)]
+
+        # Mapeo de vértice a índice
+        vertex_to_idx = {v: i for i, v in enumerate(vertices_list)}
+
+        # Distancia de un vértice a sí mismo es 0
+        for i in range(n):
+            dist[i][i] = 0
+            next_vertex[i][i] = i
+
+        # Inicializar con las aristas existentes
+        for edge_name, (v1, v2, weight) in self.edges.items():
+            i = vertex_to_idx[v1]
+            j = vertex_to_idx[v2]
+            dist[i][j] = weight
+            dist[j][i] = weight
+            next_vertex[i][j] = j
+            next_vertex[j][i] = i
+
+        # Algoritmo de Floyd-Warshall
+        for k in range(n):
+            for i in range(n):
+                for j in range(n):
+                    if dist[i][k] + dist[k][j] < dist[i][j]:
+                        dist[i][j] = dist[i][k] + dist[k][j]
+                        next_vertex[i][j] = next_vertex[i][k]
+
+        # Construir caminos
+        def reconstruct_path(i: int, j: int) -> List[str]:
+            """Reconstruye el camino de i a j"""
+            if next_vertex[i][j] is None:
+                return []
+
+            path = [vertices_list[i]]
+            while i != j:
+                i = next_vertex[i][j]
+                path.append(vertices_list[i])
+            return path
+
+        # Calcular excentricidades, radio y diámetro
+        eccentricities = {}
+        for i, v in enumerate(vertices_list):
+            max_dist = max(dist[i][j] for j in range(n) if dist[i][j] != INF)
+            eccentricities[v] = max_dist if max_dist != INF else None
+
+        valid_eccentricities = [e for e in eccentricities.values() if e is not None and e != INF]
+        radius = min(valid_eccentricities) if valid_eccentricities else None
+        diameter = max(valid_eccentricities) if valid_eccentricities else None
+
+        return {
+            "success": True,
+            "vertices": vertices_list,
+            "distance_matrix": dist,
+            "next_matrix": next_vertex,
+            "eccentricities": eccentricities,
+            "radius": radius,
+            "diameter": diameter,
+            "reconstruct_path": reconstruct_path
+        }
+
+    # ==================== TABLA DE ANÁLISIS ====================
+
+    def get_analysis_table(self) -> Dict:
+        """
+        Genera tabla completa de análisis del grafo con:
+        - Excentricidades
+        - Radio y diámetro
+        - Distancias desde cada vértice
+        - Centro y centroide
+
+        Returns:
+            Dict con toda la información para la tabla interactiva
+        """
+        if not self.is_connected():
+            return {
+                "success": False,
+                "error": "El grafo debe ser conexo para el análisis completo"
+            }
+
+        vertices_list = sorted(list(self.vertices))
+        G = self._to_networkx()
+
+        # Calcular matriz de distancias usando Floyd-Warshall
+        floyd_result = self.floyd_warshall()
+        if not floyd_result["success"]:
+            return floyd_result
+
+        # Calcular centro
+        center_result = self.graph_center()
+
+        # Calcular centroide
+        centroid_result = self.graph_centroid()
+
+        # Construir tabla de análisis por vértice
+        vertex_analysis = {}
+        for i, vertex in enumerate(vertices_list):
+            distances = {}
+            for j, other_vertex in enumerate(vertices_list):
+                distances[other_vertex] = floyd_result["distance_matrix"][i][j]
+
+            vertex_analysis[vertex] = {
+                "eccentricity": floyd_result["eccentricities"][vertex],
+                "distances": distances,
+                "sum_distances": centroid_result["distance_sums"][vertex],
+                "is_center": vertex in center_result["center_vertices"],
+                "is_centroid": vertex in centroid_result["centroid_vertices"]
+            }
+
+        return {
+            "success": True,
+            "vertices": vertices_list,
+            "vertex_analysis": vertex_analysis,
+            "radius": floyd_result["radius"],
+            "diameter": floyd_result["diameter"],
+            "center_vertices": center_result["center_vertices"],
+            "centroid_vertices": centroid_result["centroid_vertices"],
+            "distance_matrix": floyd_result["distance_matrix"]
+        }
+
     # ==================== CAMINOS Y ANÁLISIS ====================
 
     def is_connected(self) -> bool:

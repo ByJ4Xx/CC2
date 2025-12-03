@@ -260,18 +260,49 @@ class GraphOperationsManager:
         edge = g.get_edge_by_name(edge_name)
         if edge is None:
             return None
-        
+
         vertices = edge.get_vertices_list()
         if len(vertices) < 2:
             return None
-        
+
         # Primero remover la arista, luego fusionar vértices
         temp_graph = GraphData(number=g.number)
         temp_graph.vertices = g.vertices.copy()
         temp_graph.edges = g.edges.copy()
         temp_graph.remove_edge(edge_name)
-        
+
         return self.vertex_fusion(temp_graph, vertices[0], vertices[1])
+
+    def line_graph(self, g: GraphData) -> GraphData:
+        """
+        Grafo línea L(G): Operación unaria que genera un nuevo grafo donde:
+        - Cada arista de G se convierte en un vértice de L(G)
+        - Dos vértices en L(G) están conectados si sus aristas correspondientes
+          comparten un vértice en G
+
+        Ejemplo: Si G tiene aristas a,b,c donde a=(u,v) y b=(v,w),
+        entonces L(G) tiene vértices a,b,c donde existe arista entre a-b
+        """
+        result = GraphData(number=self.next_number, is_result=True)
+
+        # Convertir cada arista de G en un vértice de L(G)
+        edges_list = list(g.edges)
+        for i, edge in enumerate(edges_list):
+            result.vertices.add(edge.name)
+
+        # Crear aristas en L(G) entre vértices que comparten una arista en G
+        edge_counter = 1
+        for i, edge1 in enumerate(edges_list):
+            for edge2 in edges_list[i+1:]:
+                # Verificar si las aristas comparten un vértice
+                if edge1.vertices & edge2.vertices:  # Intersección no vacía
+                    new_edge = Edge(f"l{edge_counter}", edge1.name, edge2.name)
+                    result.edges.add(new_edge)
+                    edge_counter += 1
+
+        self.graphs[self.next_number] = result
+        self.next_number += 1
+        return result
     
     # ==================== OPERACIONES BINARIAS ====================
     
