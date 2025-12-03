@@ -74,16 +74,18 @@ class GraphOperationsContent(ctk.CTkFrame):
             buttons_frame,
             text="➕ Nuevo Grafo",
             command=self.create_new_graph,
-            fg_color="#2ecc71",
-            hover_color="#27ae60"
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="black"
         ).pack(fill="x", pady=2)
-        
+
         ctk.CTkButton(
             buttons_frame,
             text="🗑️ Borrar Seleccionado",
             command=self.delete_selected_graph,
             fg_color="#e74c3c",
-            hover_color="#c0392b"
+            hover_color="#c0392b",
+            text_color="black"
         ).pack(fill="x", pady=2)
         
         ctk.CTkButton(
@@ -91,7 +93,8 @@ class GraphOperationsContent(ctk.CTkFrame):
             text="ℹ️ Info del Grafo",
             command=self.show_graph_info,
             fg_color="#3498db",
-            hover_color="#2980b9"
+            hover_color="#2980b9",
+            text_color="black"
         ).pack(fill="x", pady=2)
         
         # Botones de archivo
@@ -102,24 +105,27 @@ class GraphOperationsContent(ctk.CTkFrame):
             file_frame,
             text="💾 Guardar Todo",
             command=self.save_all_graphs,
-            fg_color="#9b59b6",
-            hover_color="#8e44ad"
+            fg_color="#95a5a6",
+            hover_color="#7f8c8d",
+            text_color="black"
         ).pack(fill="x", pady=2)
-        
+
         ctk.CTkButton(
             file_frame,
             text="📂 Cargar Todo",
             command=self.load_all_graphs,
-            fg_color="#9b59b6",
-            hover_color="#8e44ad"
+            fg_color="#95a5a6",
+            hover_color="#7f8c8d",
+            text_color="black"
         ).pack(fill="x", pady=2)
         
         ctk.CTkButton(
             file_frame,
             text="🗑️ Limpiar Todo",
             command=self.clear_all_graphs,
-            fg_color="#95a5a6",
-            hover_color="#7f8c8d"
+            fg_color="#e74c3c",
+            hover_color="#c0392b",
+            text_color="black"
         ).pack(fill="x", pady=2)
     
     def create_visualization_area(self):
@@ -159,7 +165,8 @@ class GraphOperationsContent(ctk.CTkFrame):
         ctk.CTkButton(
             controls_frame,
             text="Agregar Vértice",
-            command=self.add_vertex
+            command=self.add_vertex,
+            text_color="black"
         ).pack(fill="x", padx=10, pady=5)
         
         # ===== SECCIÓN: Agregar Arista =====
@@ -191,7 +198,8 @@ class GraphOperationsContent(ctk.CTkFrame):
         ctk.CTkButton(
             controls_frame,
             text="Agregar Arista",
-            command=self.add_edge
+            command=self.add_edge,
+            text_color="black"
         ).pack(fill="x", padx=10, pady=5)
 
         # ===== SECCIÓN: Eliminar Vértice =====
@@ -211,7 +219,8 @@ class GraphOperationsContent(ctk.CTkFrame):
             text="Eliminar Vértice",
             command=self.delete_vertex,
             fg_color="#e74c3c",
-            hover_color="#c0392b"
+            hover_color="#c0392b",
+            text_color="black"
         ).pack(fill="x", padx=10, pady=5)
 
         # ===== SECCIÓN: Eliminar Arista =====
@@ -231,46 +240,51 @@ class GraphOperationsContent(ctk.CTkFrame):
             text="Eliminar Arista",
             command=self.delete_edge,
             fg_color="#e74c3c",
-            hover_color="#c0392b"
+            hover_color="#c0392b",
+            text_color="black"
         ).pack(fill="x", padx=10, pady=5)
 
-        # ===== SECCIÓN: Operaciones Unarias =====
-        self.create_section(controls_frame, "🔄 Operaciones Unarias (1 grafo)")
+        # ===== SECCIÓN: Operaciones de 1 grafo =====
+        self.create_section(controls_frame, "🔄 Operaciones de 1 grafo")
         
         ctk.CTkButton(
             controls_frame,
             text="Complemento (G')",
             command=self.do_complement,
-            fg_color="#e67e22",
-            hover_color="#d35400"
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="black"
         ).pack(fill="x", padx=10, pady=2)
-        
+
         ctk.CTkButton(
             controls_frame,
             text="Fusión de Vértices",
             command=self.do_vertex_fusion,
-            fg_color="#e67e22",
-            hover_color="#d35400"
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="black"
         ).pack(fill="x", padx=10, pady=2)
-        
+
         ctk.CTkButton(
             controls_frame,
             text="Contracción de Arista",
             command=self.do_edge_contraction,
-            fg_color="#e67e22",
-            hover_color="#d35400"
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="black"
         ).pack(fill="x", padx=10, pady=2)
 
         ctk.CTkButton(
             controls_frame,
             text="Grafo Línea L(G)",
             command=self.do_line_graph,
-            fg_color="#e67e22",
-            hover_color="#d35400"
+            fg_color="#3498db",
+            hover_color="#2980b9",
+            text_color="black"
         ).pack(fill="x", padx=10, pady=2)
 
-        # ===== SECCIÓN: Operaciones Binarias =====
-        self.create_section(controls_frame, "⚡ Operaciones Binarias (2+ grafos)")
+        # ===== SECCIÓN: Operaciones con 2+ grafos =====
+        self.create_section(controls_frame, "⚡ Operaciones con 2+ grafos")
         
         self.selection_label = ctk.CTkLabel(
             controls_frame,
@@ -284,55 +298,62 @@ class GraphOperationsContent(ctk.CTkFrame):
             text="Unión (G1 ∪ G2)",
             command=self.do_union,
             fg_color="#3498db",
-            hover_color="#2980b9"
+            hover_color="#2980b9",
+            text_color="black"
         ).pack(fill="x", padx=10, pady=2)
-        
+
         ctk.CTkButton(
             controls_frame,
             text="Intersección (G1 ∩ G2)",
             command=self.do_intersection,
             fg_color="#3498db",
-            hover_color="#2980b9"
+            hover_color="#2980b9",
+            text_color="black"
         ).pack(fill="x", padx=10, pady=2)
-        
+
         ctk.CTkButton(
             controls_frame,
             text="Suma Anillo (G1 ⊕ G2)",
             command=self.do_ring_sum,
             fg_color="#3498db",
-            hover_color="#2980b9"
+            hover_color="#2980b9",
+            text_color="black"
         ).pack(fill="x", padx=10, pady=2)
-        
+
         ctk.CTkButton(
             controls_frame,
             text="Suma (G1 + G2)",
             command=self.do_sum,
             fg_color="#3498db",
-            hover_color="#2980b9"
+            hover_color="#2980b9",
+            text_color="black"
         ).pack(fill="x", padx=10, pady=2)
-        
+
         ctk.CTkButton(
             controls_frame,
             text="Producto Cartesiano (G1 × G2)",
             command=self.do_cartesian_product,
             fg_color="#3498db",
-            hover_color="#2980b9"
+            hover_color="#2980b9",
+            text_color="black"
         ).pack(fill="x", padx=10, pady=2)
-        
+
         ctk.CTkButton(
             controls_frame,
             text="Producto Tensorial (G1 ⊗ G2)",
             command=self.do_tensor_product,
             fg_color="#3498db",
-            hover_color="#2980b9"
+            hover_color="#2980b9",
+            text_color="black"
         ).pack(fill="x", padx=10, pady=2)
-        
+
         ctk.CTkButton(
             controls_frame,
             text="Composición (G1 ∘ G2)",
             command=self.do_composition,
             fg_color="#3498db",
-            hover_color="#2980b9"
+            hover_color="#2980b9",
+            text_color="black"
         ).pack(fill="x", padx=10, pady=2)
     
     def create_section(self, parent, title):
