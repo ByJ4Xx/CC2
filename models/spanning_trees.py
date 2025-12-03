@@ -150,6 +150,32 @@ class WeightedGraph:
 
         return complement
 
+    def get_mst_complement(self, mst_edges: Set[str]) -> 'WeightedGraph':
+        """
+        Calcula el complemento del MST dentro del grafo original
+        Retorna un nuevo grafo con las aristas del original que NO están en el MST
+
+        Fórmula: Original = MST + Complemento del MST
+
+        Args:
+            mst_edges: Conjunto de nombres de aristas que forman el MST
+
+        Returns:
+            WeightedGraph con las aristas restantes (Original - MST)
+        """
+        complement = WeightedGraph(
+            is_directed=self.is_directed,
+            has_weights=self.has_weights
+        )
+        complement.vertices = self.vertices.copy()
+
+        # Agregar todas las aristas del grafo original que NO están en el MST
+        for edge_name, (v1, v2, weight) in self.edges.items():
+            if edge_name not in mst_edges:
+                complement.add_edge(edge_name, v1, v2, weight)
+
+        return complement
+
     def get_subgraph(self, vertices_subset: Set[str]) -> 'WeightedGraph':
         """
         Crea un subgrafo con solo los vértices especificados y sus aristas

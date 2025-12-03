@@ -576,8 +576,8 @@ class SpanningTreesContent(ctk.CTkFrame):
         # Guardar árbol actual
         self.current_tree = set(result["edge_names"])
 
-        # Calcular complemento
-        complement = self.graph.get_complement_graph()
+        # Calcular complemento del MST (aristas del original que NO están en el MST)
+        complement = self.graph.get_mst_complement(self.current_tree)
         complement_edges = set(complement.edges.keys())
 
         output = f"ÁRBOL GENERADOR MÍNIMO ({algorithm.upper()})\n\n"
@@ -636,8 +636,9 @@ class SpanningTreesContent(ctk.CTkFrame):
                 v1, v2, weight = self.graph.edges[edge_name]
                 mst_graph.add_edge(edge_name, v1, v2, weight)
 
-        # Obtener el complemento del MST (aristas que no están en el MST)
-        complement = mst_graph.get_complement_graph()
+        # Obtener el complemento del MST (aristas del original que NO están en el MST)
+        # Fórmula: Original = MST + Complemento del MST
+        complement = self.graph.get_mst_complement(set(mst_result["edge_names"]))
 
         # Crear ventana
         window = ctk.CTkToplevel(self)
