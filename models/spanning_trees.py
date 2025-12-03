@@ -169,70 +169,38 @@ class WeightedGraph:
 
     def find_tree_center(self, spanning_tree_edges: Optional[Set[str]] = None) -> Dict:
         """
-        Encuentra el centro del árbol de expansión
-        Elimina iterativamente los vértices con grado 1 (hojas)
-        hasta quedarse con 1 o 2 vértices
+        Encuentra el centro del grafo basándose en la tabla de excentricidades
+        El centro está formado por el vértice (o vértices) con excentricidad mínima (radio)
 
         Args:
-            spanning_tree_edges: Conjunto de aristas que forman el árbol.
-                                Si es None, se calcula el MST automáticamente.
+            spanning_tree_edges: No utilizado (parámetro por compatibilidad)
 
         Returns:
             Dict con información del centro
         """
-        # Si no se proporciona árbol, calcular MST
-        if spanning_tree_edges is None:
-            mst_result = self.minimum_spanning_tree()
-            if not mst_result["success"]:
-                return mst_result
-            spanning_tree_edges = set(mst_result["edge_names"])
+        # Usar Floyd-Warshall para obtener excentricidades
+        fw_result = self.floyd_warshall()
 
-        # Crear una copia del árbol para no modificar el grafo original
-        tree_vertices = self.vertices.copy()
-        tree_edges = {}
+        if not fw_result["success"]:
+            return {
+                "success": False,
+                "error": fw_result.get("error", "Error en Floyd-Warshall")
+            }
 
-        for edge_name in spanning_tree_edges:
-            if edge_name in self.edges:
-                tree_edges[edge_name] = self.edges[edge_name]
+        eccentricities = fw_result["eccentricities"]
+        radius = fw_result["radius"]
 
-        # Eliminar iterativamente hojas (grado 1)
-        while len(tree_vertices) > 2:
-            # Calcular grados en el árbol actual
-            degrees = {v: 0 for v in tree_vertices}
-            for _, (v1, v2, _) in tree_edges.items():
-                if v1 in tree_vertices:
-                    degrees[v1] += 1
-                if v2 in tree_vertices:
-                    degrees[v2] += 1
-
-            # Encontrar hojas (grado 1)
-            leaves = [v for v, d in degrees.items() if d == 1]
-
-            if not leaves:
-                break
-
-            # Eliminar hojas
-            for leaf in leaves:
-                tree_vertices.discard(leaf)
-                # Eliminar aristas que contienen la hoja
-                edges_to_remove = [
-                    name for name, (v1, v2, _) in tree_edges.items()
-                    if v1 == leaf or v2 == leaf
-                ]
-                for edge_name in edges_to_remove:
-                    del tree_edges[edge_name]
-
-        center_vertices = sorted(list(tree_vertices))
+        # El centro es el conjunto de vértices con excentricidad igual al radio
+        center_vertices = sorted([v for v, ecc in eccentricities.items() if ecc == radius])
 
         # Verificar si es centro (1 vértice) o bicentro (2 vértices)
         is_bicentro = len(center_vertices) == 2
         is_connected_bicentro = False
 
         if is_bicentro:
-            # Verificar si los dos vértices están conectados en el árbol original
+            # Verificar si los dos vértices están conectados directamente
             v1, v2 = center_vertices[0], center_vertices[1]
-            for edge_name in spanning_tree_edges:
-                edge_v1, edge_v2, _ = self.edges[edge_name]
+            for edge_name, (edge_v1, edge_v2, _) in self.edges.items():
                 if (edge_v1 == v1 and edge_v2 == v2) or (edge_v1 == v2 and edge_v2 == v1):
                     is_connected_bicentro = True
                     break
@@ -243,7 +211,9 @@ class WeightedGraph:
             "is_center": len(center_vertices) == 1,
             "is_bicentro": is_bicentro,
             "is_connected_bicentro": is_connected_bicentro,
-            "num_centers": len(center_vertices)
+            "num_centers": len(center_vertices),
+            "radius": radius,
+            "eccentricities": eccentricities
         }
 
     # ==================== ÁRBOLES GENERADORES ====================

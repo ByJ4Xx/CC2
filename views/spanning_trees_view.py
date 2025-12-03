@@ -608,7 +608,7 @@ class SpanningTreesContent(ctk.CTkFrame):
         self.notebook.set("Resultados")
 
     def show_three_graphs(self):
-        """Muestra 3 grafos en una ventana: Original, MST, Complemento"""
+        """Muestra 3 grafos en una ventana: Original, MST, Complemento del MST"""
         if len(self.graph.vertices) == 0:
             messagebox.showwarning("Advertencia", "El grafo está vacío")
             return
@@ -623,8 +623,21 @@ class SpanningTreesContent(ctk.CTkFrame):
             messagebox.showerror("Error", mst_result["error"])
             return
 
-        # Obtener el complemento
-        complement = self.graph.get_complement_graph()
+        # Crear un grafo con solo las aristas del MST
+        mst_graph = WeightedGraph(
+            is_directed=self.graph.is_directed,
+            has_weights=self.graph.has_weights
+        )
+        mst_graph.vertices = self.graph.vertices.copy()
+
+        # Agregar solo las aristas del MST
+        for edge_name in mst_result["edge_names"]:
+            if edge_name in self.graph.edges:
+                v1, v2, weight = self.graph.edges[edge_name]
+                mst_graph.add_edge(edge_name, v1, v2, weight)
+
+        # Obtener el complemento del MST (aristas que no están en el MST)
+        complement = mst_graph.get_complement_graph()
 
         # Crear ventana
         window = ctk.CTkToplevel(self)
@@ -707,13 +720,13 @@ class SpanningTreesContent(ctk.CTkFrame):
 
         # Crear 3 subfiguras
         create_graph_display(main_frame, "Grafo Original", self.graph)
-        create_graph_display(main_frame, "Árbol Mínimo (MST)", self.graph, highlight_edges=set(mst_result["edge_names"]))
-        create_graph_display(main_frame, "Complemento", complement)
+        create_graph_display(main_frame, "Árbol Mínimo (MST)", mst_graph)
+        create_graph_display(main_frame, "Complemento del MST", complement)
 
     # ==================== CENTRO Y CENTROIDE ====================
 
     def calculate_center(self):
-        """Calcula el centro del árbol mínimo"""
+        """Calcula el centro del grafo basándose en excentricidades"""
         if len(self.graph.vertices) == 0:
             messagebox.showwarning("Advertencia", "El grafo está vacío")
             return
@@ -722,19 +735,17 @@ class SpanningTreesContent(ctk.CTkFrame):
             messagebox.showerror("Error", "El grafo debe ser conexo para calcular el centro")
             return
 
-        # Usar el árbol actual o calcular el MST
-        tree_edges = self.current_tree if self.current_tree else None
-
-        result = self.graph.find_tree_center(tree_edges)
+        result = self.graph.find_tree_center()
 
         if not result["success"]:
             messagebox.showerror("Error", result.get("error", "Error desconocido"))
             return
 
-        output = "CENTRO DEL ÁRBOL DE EXPANSIÓN MÍNIMO\n"
+        output = "CENTRO DEL GRAFO (Basado en Excentricidades)\n"
         output += "=" * 50 + "\n\n"
 
         center_vertices = result["center_vertices"]
+        radius = result["radius"]
 
         if result["is_center"]:
             output += f"✓ CENTRO: {center_vertices[0]}\n\n"
@@ -750,12 +761,17 @@ class SpanningTreesContent(ctk.CTkFrame):
         else:
             output += f"Centro: {', '.join(center_vertices)}\n\n"
 
-        output += f"Número de vértices en el centro: {result['num_centers']}\n\n"
+        output += f"Número de vértices en el centro: {result['num_centers']}\n"
+        output += f"Radio del grafo (excentricidad mínima): {radius}\n\n"
 
-        output += "Algoritmo: Eliminación iterativa de hojas (grado 1)\n"
-        output += "1. Se comienza con el árbol mínimo\n"
-        output += "2. Se eliminan todos los vértices con grado 1 (hojas)\n"
-        output += "3. Se repite hasta que queden 1 o 2 vértices\n"
+        output += "Excentricidades de cada vértice:\n"
+        for vertex in sorted(result["eccentricities"].keys()):
+            ecc = result["eccentricities"][vertex]
+            marker = " ⭐ CENTRO" if vertex in center_vertices else ""
+            output += f"  {vertex}: {ecc}{marker}\n"
+
+        output += "\nAlgoritmo: Floyd-Warshall\n"
+        output += "El centro es el conjunto de vértices con excentricidad igual al radio\n"
 
         self.show_results(output)
         self.notebook.set("Resultados")
