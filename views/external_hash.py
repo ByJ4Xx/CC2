@@ -27,39 +27,49 @@ class ExternalHashView(ctk.CTkFrame):
         
         ctk.CTkLabel(self.config_frame, text="Configuración Inicial", font=("Arial", 14, "bold")).grid(row=0, column=0, columnspan=6, sticky="w")
         
-        self.entry_n = ctk.CTkEntry(self.config_frame, placeholder_text="Num. Registros (N)")
-        self.entry_n.grid(row=1, column=0, padx=4, pady=4, sticky="ew")
-        
-        self.entry_k = ctk.CTkEntry(self.config_frame, placeholder_text="Longitud Clave (K)")
-        self.entry_k.grid(row=1, column=1, padx=4, pady=4, sticky="ew")
-        
+        ctk.CTkLabel(self.config_frame, text="Registros (N):").grid(row=1, column=0, padx=4, pady=4, sticky="e")
+        self.entry_n = ctk.CTkEntry(self.config_frame, placeholder_text="N")
+        self.entry_n.grid(row=2, column=0, padx=4, pady=4, sticky="ew")
+
+        ctk.CTkLabel(self.config_frame, text="Longitud Clave (K):").grid(row=1, column=1, padx=4, pady=4, sticky="e")
+        self.combo_k = ctk.CTkComboBox(
+            self.config_frame,
+            values=[str(i) for i in range(1, 10)]
+        )
+        self.combo_k.set("4")
+        self.combo_k.grid(row=2, column=1, padx=4, pady=4, sticky="ew")
+
+        ctk.CTkLabel(self.config_frame, text="Función Hash:").grid(row=1, column=2, padx=4, pady=4, sticky="e")
         self.combo_func = ctk.CTkComboBox(
-            self.config_frame, 
+            self.config_frame,
             values=["Cuadrado", "Modular", "Plegamiento", "Truncamiento", "Conversion Base"],
             command=self.on_func_change
         )
         self.combo_func.set("Cuadrado")
-        self.combo_func.grid(row=1, column=2, padx=4, pady=4, sticky="ew")
-        
-        # Folding operation selector (visible only for plegamiento)
-        self.combo_fold_op = ctk.CTkComboBox(
-            self.config_frame,
-            values=["Suma", "Multiplicación"],
-            state="disabled"
-        )
-        self.combo_fold_op.set("Suma")
-        self.combo_fold_op.grid(row=1, column=3, padx=4, pady=4, sticky="ew")
+        self.combo_func.grid(row=2, column=2, padx=4, pady=4, sticky="ew")
 
-        self.combo_base = ctk.CTkComboBox(
+        # Button for folding operation (opens dialog)
+        self.btn_fold_op = ctk.CTkButton(
             self.config_frame,
-            values=[str(i) for i in range(2, 10)],
+            text="Plegamiento",
+            command=self.open_folding_dialog,
             state="disabled"
         )
-        self.combo_base.set("Base (2-9)")
-        self.combo_base.grid(row=1, column=4, padx=4, pady=4, sticky="ew")
-        
-        self.btn_create = ctk.CTkButton(self.config_frame, text="Crear Estructura", command=self.create_structure)
-        self.btn_create.grid(row=1, column=5, padx=4, pady=4, sticky="ew")
+        self.btn_fold_op.grid(row=2, column=3, padx=4, pady=4, sticky="ew")
+        self.folding_op_selected = "suma"
+
+        # Button for base conversion (opens dialog)
+        self.btn_base = ctk.CTkButton(
+            self.config_frame,
+            text="Base Conv.",
+            command=self.open_base_dialog,
+            state="disabled"
+        )
+        self.btn_base.grid(row=2, column=4, padx=4, pady=4, sticky="ew")
+        self.base_selected = None
+
+        self.btn_create = ctk.CTkButton(self.config_frame, text="Crear", command=self.create_structure)
+        self.btn_create.grid(row=2, column=5, padx=4, pady=4, sticky="ew")
         
         self.btn_delete_struct = ctk.CTkButton(self.config_frame, text="Borrar Estructura", command=self.delete_structure, fg_color="red", hover_color="darkred")
         
@@ -103,23 +113,73 @@ class ExternalHashView(ctk.CTkFrame):
 
     def on_func_change(self, choice):
         if choice == "Conversion Base":
-            self.combo_base.configure(state="normal")
-            self.combo_base.set("9")
+            self.btn_base.configure(state="normal")
+            self.base_selected = None
         else:
-            self.combo_base.configure(state="disabled")
-            self.combo_base.set("Base (2-9)")
+            self.btn_base.configure(state="disabled")
+            self.base_selected = None
 
         if choice == "Plegamiento":
-            self.combo_fold_op.configure(state="normal")
-            self.combo_fold_op.set("Suma")
+            self.btn_fold_op.configure(state="normal")
+            self.folding_op_selected = "suma"
         else:
-            self.combo_fold_op.configure(state="disabled")
-            self.combo_fold_op.set("Suma")
+            self.btn_fold_op.configure(state="disabled")
+            self.folding_op_selected = "suma"
+
+    def open_folding_dialog(self):
+        """Open a dialog to select folding operation"""
+        dlg = tk.Toplevel(self)
+        dlg.title("Plegamiento: Seleccionar Operación")
+        dlg.geometry("300x150")
+
+        tk.Label(dlg, text="Seleccione la operación para plegamiento:", font=("Arial", 12)).pack(padx=15, pady=10)
+
+        var = tk.StringVar(value="suma")
+        rb_frame = tk.Frame(dlg)
+        rb_frame.pack(padx=15, pady=10)
+
+        tk.Radiobutton(rb_frame, text="Suma", variable=var, value="suma", font=("Arial", 11)).pack(anchor="w", pady=5)
+        tk.Radiobutton(rb_frame, text="Multiplicación", variable=var, value="multiplicacion", font=("Arial", 11)).pack(anchor="w", pady=5)
+
+        def on_ok():
+            self.folding_op_selected = var.get()
+            dlg.destroy()
+
+        tk.Button(dlg, text="Aceptar", command=on_ok, width=20).pack(pady=10)
+
+        dlg.transient(self)
+        dlg.grab_set()
+        self.wait_window(dlg)
+
+    def open_base_dialog(self):
+        """Open a dialog to select base for conversion"""
+        dlg = tk.Toplevel(self)
+        dlg.title("Conversión de Base: Seleccionar Base")
+        dlg.geometry("300x250")
+
+        tk.Label(dlg, text="Seleccione la base (2-9):", font=("Arial", 12)).pack(padx=15, pady=10)
+
+        var = tk.IntVar(value=2)
+        rb_frame = tk.Frame(dlg)
+        rb_frame.pack(padx=15, pady=10)
+
+        for base in range(2, 10):
+            tk.Radiobutton(rb_frame, text=f"Base {base}", variable=var, value=base, font=("Arial", 11)).pack(anchor="w", pady=3)
+
+        def on_ok():
+            self.base_selected = var.get()
+            dlg.destroy()
+
+        tk.Button(dlg, text="Aceptar", command=on_ok, width=20).pack(pady=10)
+
+        dlg.transient(self)
+        dlg.grab_set()
+        self.wait_window(dlg)
 
     def create_structure(self):
         try:
             n = int(self.entry_n.get())
-            k = int(self.entry_k.get())
+            k = int(self.combo_k.get())
             func_map = {
                 "Cuadrado": "cuadrado",
                 "Modular": "modular",
@@ -134,10 +194,9 @@ class ExternalHashView(ctk.CTkFrame):
             folding_op = None
 
             if func == "conversion_base":
-                base_val = self.combo_base.get()
-                if not base_val.isdigit():
-                    raise ValueError("Seleccione una base válida")
-                base = int(base_val)
+                if self.base_selected is None:
+                    raise ValueError("Debe seleccionar una base usando el botón 'Base Conv.'")
+                base = self.base_selected
 
             # If truncation, open dialog to pick positions
             if func == "truncamiento":
@@ -190,8 +249,7 @@ class ExternalHashView(ctk.CTkFrame):
                 trunc_positions = sel
 
             if func == "plegamiento":
-                op = self.combo_fold_op.get()
-                folding_op = "suma" if op == "Suma" else "multiplicacion"
+                folding_op = self.folding_op_selected
 
             self.structure = ExternalHashStructure(n, k, func, base, trunc_positions=trunc_positions, folding_op=folding_op)
             
@@ -220,10 +278,10 @@ class ExternalHashView(ctk.CTkFrame):
         self.btn_delete_struct.grid_forget()
         self.btn_create.grid(row=1, column=5, padx=4, pady=4, sticky="ew")
         self.entry_n.configure(state="normal")
-        self.entry_k.configure(state="normal")
+        self.combo_k.configure(state="normal")
         self.combo_func.configure(state="normal")
         if self.combo_func.get() == "Conversion Base":
-            self.combo_base.configure(state="normal")
+            self.btn_base.configure(state="normal")
 
         self.btn_insert.configure(state="disabled")
         self.btn_search.configure(state="disabled")
@@ -237,8 +295,13 @@ class ExternalHashView(ctk.CTkFrame):
     def insert_key(self):
         if not self.structure: return
         try:
-            val = int(self.entry_key.get())
-            idx, area, slot = self.structure.insert(val)
+            orig_str = self.entry_key.get().strip()
+            if not orig_str:
+                raise ValueError("Ingresa una clave")
+            if not orig_str.isdigit():
+                raise ValueError("La clave debe ser numérica (solo dígitos)")
+            val = int(orig_str)
+            idx, area, slot = self.structure.insert(val, orig_str)
             self.refresh_visualization()
             messagebox.showinfo("Insertado", f"Clave {val} insertada en Bloque {idx} ({area}), Pos {slot}")
         except ValueError as e:
@@ -300,12 +363,10 @@ class ExternalHashView(ctk.CTkFrame):
                 self.entry_n.delete(0, "end")
                 self.entry_n.insert(0, str(self.structure.num_records))
                 self.entry_n.configure(state="disabled")
-                
-                self.entry_k.configure(state="normal")
-                self.entry_k.delete(0, "end")
-                self.entry_k.insert(0, str(self.structure.key_length))
-                self.entry_k.configure(state="disabled")
-                
+
+                self.combo_k.set(str(self.structure.key_length))
+                self.combo_k.configure(state="disabled")
+
                 # Map internal func name back to UI value
                 func_map_rev = {
                     "cuadrado": "Cuadrado",
@@ -317,10 +378,13 @@ class ExternalHashView(ctk.CTkFrame):
                 ui_func = func_map_rev.get(self.structure.hash_func, "Cuadrado")
                 self.combo_func.set(ui_func)
                 self.combo_func.configure(state="disabled")
-                
+
                 if self.structure.hash_func == "conversion_base":
-                    self.combo_base.set(str(self.structure.base))
-                self.combo_base.configure(state="disabled")
+                    self.base_selected = self.structure.base
+                self.btn_base.configure(state="disabled")
+                if self.structure.hash_func == "plegamiento":
+                    self.folding_op_selected = self.structure.folding_op
+                self.btn_fold_op.configure(state="disabled")
                 
                 self.btn_create.pack_forget()
                 self.btn_delete_struct.pack(pady=5, fill="x")
@@ -379,7 +443,12 @@ class ExternalHashView(ctk.CTkFrame):
             records_frame.pack(fill="x", padx=5, pady=5)
             
             for j, record in enumerate(block):
-                rec_text = str(record) if record is not None else "vacío"
+                if record is not None:
+                    # Mostrar con leading zeros
+                    klen = int(self.structure.key_length) if self.structure else 0
+                    rec_text = str(record).zfill(klen)
+                else:
+                    rec_text = "vacío"
                 rec_color = "#1f6aa5" if record is not None else "#555"
 
                 # Highlight if matches search

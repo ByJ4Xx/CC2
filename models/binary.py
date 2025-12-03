@@ -46,13 +46,26 @@ class BinaryStructure:
     def is_full(self) -> bool:
         return len(self.items) >= self.capacity
 
-    def _valid_key(self, value: int) -> bool:
-        return isinstance(value, int) and len(str(abs(value))) == int(self.key_length)
+    def _valid_key(self, value: int, original_string: str = None) -> bool:
+        """
+        Valida una clave.
+        - Si original_string se proporciona, valida su longitud (permite leading zeros)
+        - Si no, valida el int (comportamiento anterior)
+        """
+        if not isinstance(value, int):
+            return False
 
-    def insert(self, value: int) -> int:
+        # Si se proporciona el string original, validar su longitud
+        if original_string is not None:
+            return original_string.strip().isdigit() and len(original_string.strip()) == int(self.key_length)
+
+        # Si no, validar el int (comportamiento anterior)
+        return len(str(abs(value))) == int(self.key_length)
+
+    def insert(self, value: int, original_string: str = None) -> int:
         if self.is_full:
             raise ValueError("La estructura está llena")
-        if not self._valid_key(value):
+        if not self._valid_key(value, original_string):
             raise ValueError("La clave no cumple la longitud configurada")
         i = bisect.bisect_left(self.items, value)
         if i < len(self.items) and self.items[i] == value:

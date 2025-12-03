@@ -166,6 +166,7 @@ class HashContent(BaseContent):
         if cap == 0:
             self.viewer.insert("end", "Crea o carga la estructura para visualizar contenido.\n")
         else:
+            klen = int(self.structure.key_length) if self.structure else 0
             mode = self.structure.collision if self.structure else ""
             for i in range(mostrar):
                 if mode in {"anidados", "encadenamiento"}:
@@ -175,7 +176,9 @@ class HashContent(BaseContent):
                         items = []
                     if items:
                         joiner = " -> " if mode == "encadenamiento" else ", "
-                        self.viewer.insert("end", f"[{i+1:>4}]  {joiner.join(str(x) for x in items)}\n")
+                        # Mostrar con leading zeros
+                        items_str = [str(x).zfill(klen) for x in items]
+                        self.viewer.insert("end", f"[{i+1:>4}]  {joiner.join(items_str)}\n")
                     else:
                         self.viewer.insert("end", f"[{i+1:>4}]  -\n")
                     continue
@@ -183,7 +186,9 @@ class HashContent(BaseContent):
                 if i < len(tabla):
                     val = tabla[i]
                 if isinstance(val, int):
-                    self.viewer.insert("end", f"[{i+1:>4}]  {val}\n")
+                    # Mostrar con leading zeros
+                    val_str = str(val).zfill(klen)
+                    self.viewer.insert("end", f"[{i+1:>4}]  {val_str}\n")
                 elif val is TOMBSTONE:
                     self.viewer.insert("end", f"[{i+1:>4}]  †\n")
                 else:
@@ -231,9 +236,11 @@ class HashContent(BaseContent):
             val = int(s)
         except ValueError:
             return False, None, "Clave invalida."
-        if len(str(abs(val))) != int(self.structure.key_length):
+        # Para hash, usamos len(s) para permitir leading zeros
+        if len(s) != int(self.structure.key_length):
             return False, None, f"La clave debe tener {self.structure.key_length} digitos."
-        return True, val, None
+        # Retorna (True, valor_int, string_original)
+        return True, val, s
 
     # Acciones
     def on_crear(self):
@@ -335,12 +342,12 @@ class HashContent(BaseContent):
         self._set_estado("Estructura borrada. Configura y pulsa Crear.")
 
     def on_insertar(self):
-        ok, val, err = self._parse_key()
+        ok, val, orig_str = self._parse_key()
         if not ok:
-            self._error(err or "")
+            self._error(orig_str or "")
             return
         try:
-            idx, first_collision, attempts = self.structure.insert(val)  # type: ignore[union-attr]
+            idx, first_collision, attempts = self.structure.insert(val, orig_str)  # type: ignore[union-attr]
             if first_collision is not None:
                 self._info(f"Colision en indice {first_collision}; resuelta en {idx} tras {attempts} intento(s).")
             else:

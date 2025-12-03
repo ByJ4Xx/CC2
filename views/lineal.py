@@ -222,10 +222,13 @@ class LinealContent(BaseContent):
         if cap == 0:
             self.viewer.insert("end", "Crea o carga la estructura para visualizar contenido.\n")
         else:
+            klen = int(self.structure.key_length) if self.structure else 0
             for i in range(mostrar):
                 if i < len(items):
                     val = items[i]
-                    self.viewer.insert("end", f"[{i+1:>4}]  {val}\n")
+                    # Mostrar con leading zeros
+                    val_str = str(val).zfill(klen)
+                    self.viewer.insert("end", f"[{i+1:>4}]  {val_str}\n")
                 else:
                     self.viewer.insert("end", f"[{i+1:>4}]  —\n")
             if cap > mostrar:
@@ -269,9 +272,11 @@ class LinealContent(BaseContent):
             val = int(s)
         except ValueError:
             return False, None, "Clave inválida."
-        if len(str(abs(val))) != int(self.structure.key_length):
+        # Para linear, usamos len(s) para permitir leading zeros
+        if len(s) != int(self.structure.key_length):
             return False, None, f"La clave debe tener {self.structure.key_length} dígitos."
-        return True, val, None
+        # Retorna (True, valor_int, string_original)
+        return True, val, s
 
     # Acciones (los métodos de acciones permanecen igual)
     def on_crear(self):
@@ -309,12 +314,12 @@ class LinealContent(BaseContent):
         self._set_estado("Estructura borrada. Configura y pulsa Crear.")
 
     def on_insertar(self):
-        ok, val, err = self._parse_key()
+        ok, val, orig_str = self._parse_key()
         if not ok:
-            self._error(err or "")
+            self._error(orig_str or "")
             return
         try:
-            idx = self.structure.insert(val)  # type: ignore[union-attr]
+            idx = self.structure.insert(val, orig_str)  # type: ignore[union-attr]
             self._set_estado(f"Insertado {val} en índice {idx+1}.")
         except Exception as e:
             self._error(str(e))

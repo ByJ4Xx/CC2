@@ -5,7 +5,7 @@ import customtkinter as ctk
 from .base import BaseContent
 
 class ExternalIndexNewView(BaseContent):
-    title = "B. Externas · Índices"
+    title = "B. Externas · Indexadas"
     
     def __init__(self, master):
         super().__init__(master)
@@ -211,7 +211,7 @@ class ExternalIndexNewView(BaseContent):
             widget.destroy()
 
         s = self.scale_factor
-        
+
         # Contenedor horizontal para los niveles
         for i, level in enumerate(levels):
             # Frame para cada nivel
@@ -220,7 +220,7 @@ class ExternalIndexNewView(BaseContent):
 
             # Titulo del nivel
             ctk.CTkLabel(level_frame, text=level["name"], font=("Arial", int(14*s), "bold")).pack(pady=int(5*s))
-            
+
             # Info
             info_text = f"Bloques: {level['blocks']}\nReg/Bloque: {level['per_block']}"
             ctk.CTkLabel(level_frame, text=info_text, font=("Arial", int(12*s))).pack(pady=int(2*s))
@@ -229,18 +229,29 @@ class ExternalIndexNewView(BaseContent):
             blocks_container = ctk.CTkFrame(level_frame, fg_color="transparent")
             blocks_container.pack(pady=int(10*s), padx=int(10*s))
 
-            # Primer Bloque (siempre lleno o con lo que tenga si es el unico)
-            first_block_items = level["per_block"] if level["blocks"] > 1 else level["last_block_items"]
-            # Start ID para bloque 1 es siempre 1
-            self.draw_block(blocks_container, 1, first_block_items, level["type"], start_id=1)
+            # Mostrar bloques: todos si <= 5, si no primeros 3 + "..." + último
+            max_display = 5
+            if level["blocks"] <= max_display:
+                # Mostrar todos los bloques
+                for block_num in range(1, level["blocks"] + 1):
+                    if block_num == level["blocks"]:
+                        # Último bloque
+                        items_count = level["last_block_items"]
+                    else:
+                        items_count = level["per_block"]
+                    start_id = (block_num - 1) * level["per_block"] + 1
+                    self.draw_block(blocks_container, block_num, items_count, level["type"], start_id=start_id)
+            else:
+                # Mostrar primeros 3 bloques
+                for block_num in range(1, 4):
+                    items_count = level["per_block"]
+                    start_id = (block_num - 1) * level["per_block"] + 1
+                    self.draw_block(blocks_container, block_num, items_count, level["type"], start_id=start_id)
 
-            # Puntos suspensivos si hay mas de 2 bloques
-            if level["blocks"] > 2:
+                # Puntos suspensivos
                 ctk.CTkLabel(blocks_container, text="...", font=("Arial", int(20*s))).pack(pady=int(5*s))
-            
-            # Ultimo Bloque (si hay mas de 1)
-            if level["blocks"] > 1:
-                # Start ID para el ultimo bloque
+
+                # Último bloque
                 last_start_id = (level["blocks"] - 1) * level["per_block"] + 1
                 self.draw_block(blocks_container, level["blocks"], level["last_block_items"], level["type"], start_id=last_start_id)
 

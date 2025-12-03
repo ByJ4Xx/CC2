@@ -592,9 +592,9 @@ Este módulo es similar a las **funciones hash internas**, pero optimizado para 
 
     - El método de colisión determina cómo se resuelve esto (encadenamiento significa que se almacenan en una lista dentro del bucket).
 
-## 5.4 Índices Externos
+## 5.4 Búsquedas Indexadas
 
-Los índices son **tablas auxiliares** que ayudan a localizar registros sin necesidad de recorrer todo el archivo.
+La búsqueda indexada utiliza **tablas auxiliares** que ayudan a localizar registros sin necesidad de recorrer todo el archivo.
 
 **Analogía del Mundo Real:**
 

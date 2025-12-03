@@ -78,8 +78,21 @@ class HashStructure:
             return total
         return sum(1 for x in self.table if isinstance(x, int))
 
-    def _valid_key(self, value: int) -> bool:
-        return isinstance(value, int) and len(str(abs(value))) == int(self.key_length)
+    def _valid_key(self, value: int, original_string: str = None) -> bool:
+        """
+        Valida una clave.
+        - Si original_string se proporciona, valida su longitud (permite leading zeros)
+        - Si no, valida el int (comportamiento anterior)
+        """
+        if not isinstance(value, int):
+            return False
+
+        # Si se proporciona el string original, validar su longitud
+        if original_string is not None:
+            return original_string.strip().isdigit() and len(original_string.strip()) == int(self.key_length)
+
+        # Si no, validar el int (comportamiento anterior)
+        return len(str(abs(value))) == int(self.key_length)
 
     def _h_square(self, value: int) -> int:
         n = len(str(self.capacity - 1))  # digits of capacity - 1 equals exponent n
@@ -182,10 +195,10 @@ class HashStructure:
                 return idx + 1
         return -1
 
-    def insert(self, value: int) -> Tuple[int, Optional[int], int]:
+    def insert(self, value: int, original_string: str = None) -> Tuple[int, Optional[int], int]:
         if self.collision not in {"anidados", "encadenamiento"} and self.size >= self.capacity:
             raise ValueError("La estructura está llena")
-        if not self._valid_key(value):
+        if not self._valid_key(value, original_string):
             raise ValueError("La clave no cumple la longitud configurada")
         if self.find(value) != -1:
             raise ValueError("La clave ya existe (duplicada)")
